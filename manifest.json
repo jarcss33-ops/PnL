@@ -7,7 +7,7 @@
   "theme_color": "#0b0f19",
   "icons": [
     {
-      "src": "https://images.stockcake.com/public/4/1/7/4174bf9d-3b84-46b6-813e-cdeb16dd1a2b_large/cyberpunk-crypto-interface-stockcake.jpg",
+      "src": "./iconpnl.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any maskable"
