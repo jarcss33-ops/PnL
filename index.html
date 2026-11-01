@@ -147,10 +147,10 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
     </div>
   </section>
 
-  <!-- TAB 6: CENTRO DE IMPORTACIÓN AISLADO -->
+  <!-- TAB 6: CENTRO DE IMPORTACIÓN LIMPIO -->
   <section id="v-import" class="hidden space-y-4">
     <div class="card p-4 space-y-4 text-xs">
-      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación Aislado</h3>
+      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación Limpio</h3>
       
       <!-- Método 1: Archivos -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
@@ -164,15 +164,14 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
       <!-- Método 2: Pegado de Texto -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
         <div class="font-bold text-white">2. Pegado de Texto / Historial</div>
-        <textarea id="importTextArea" rows="5" class="inp font-mono text-[11px]" placeholder="XAUUSD-STD, sell 0.02
-4 033.42 → 4 033.78    2026.10.29 10:14:58    -0.65"></textarea>
+        <textarea id="importTextArea" rows="5" class="inp font-mono text-[11px]" placeholder="Pega aquí tu historial (vacío si solo subes captura)..."></textarea>
         <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar Texto</button>
       </div>
 
-      <!-- Método 3: Captura de Pantalla Independiente -->
+      <!-- Método 3: Captura de Pantalla Limpia -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">3. Registrar mediante Captura de Pantalla</div>
-        <p class="text-slate-400">Sube tu captura. El sistema procesará exclusivamente el contenido actual del cuadro de texto o la línea analizada.</p>
+        <div class="font-bold text-white">3. Adjuntar Captura como Evidencia Visual</div>
+        <p class="text-slate-400">Sube tu captura. Si el cuadro de texto está vacío, guardará la imagen adjunta en un registro limpio para que la edites o completes al momento.</p>
         <div class="flex items-center gap-3">
           <label class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded border border-slate-700 cursor-pointer">
             📷 Subir Captura
@@ -270,7 +269,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
 </div>
 
 <script>
-const KEY='pnl_ledger_pro_v4_8';
+const KEY='pnl_ledger_pro_v4_9';
 let state=JSON.parse(localStorage.getItem(KEY))||{
   unit:'$',priv:false,activeAcc:'acc1',calDate:new Date().toISOString().slice(0,7),
   accounts:[
@@ -572,8 +571,8 @@ function previewImg(e){
   });
 }
 
-// PROCESADOR INDEPENDIENTE DE CAPTURAS AISLADAS
-function parseIsolatedScreenshot(rawText, imgB64 = '') {
+// PROCESADOR DE TEXTO PURO (SIN DATOS HARDCODEADOS)
+function parseStrictText(rawText, imgB64 = '') {
   const lines = rawText.split('\n');
   let added = 0;
   let currentSym = 'XAUUSD';
@@ -612,7 +611,7 @@ function parseIsolatedScreenshot(rawText, imgB64 = '') {
       }
 
       state.trades.push({
-        id: 'iso_' + Date.now() + '_' + idx,
+        id: 'strict_' + Date.now() + '_' + idx,
         acc: curAcc().id,
         date: dateStr,
         sym: currentSym,
@@ -624,12 +623,12 @@ function parseIsolatedScreenshot(rawText, imgB64 = '') {
         fee: 0,
         risk: 50,
         ses: 'Londres',
-        setup: 'Captura Aislada',
+        setup: 'Importado Texto',
         err: '',
         mae: 0,
         mfe: 0,
         emo: 'Disciplinado',
-        notes: 'Importado de captura',
+        notes: 'Operación importada',
         img: imgB64
       });
       added++;
@@ -641,18 +640,42 @@ function parseIsolatedScreenshot(rawText, imgB64 = '') {
 function importScreenshot(e){
   const f=e.target.files[0];if(!f)return;
   compressImage(f, b64 => {
-    // Si el usuario escribió algo en el textarea, lo usa; si no, toma la imagen como registro visual directo
     const customText = document.getElementById('importTextArea').value.trim();
-    const textToProcess = customText ? customText : `XAUUSD-STD, sell 0.02\n4 033.42 → 4 033.78    2026.10.29 10:14:58    -0.65`;
     
-    const added = parseIsolatedScreenshot(textToProcess, b64);
+    if(!customText) {
+      // Si el cuadro de texto está vacío, creamos un registro limpio asociado a la imagen para que la edites sin datos falsos
+      state.trades.push({
+        id: 'img_only_' + Date.now(),
+        acc: curAcc().id,
+        date: new Date().toISOString().slice(0,16),
+        sym: 'XAUUSD',
+        side: 'LONG',
+        size: 0.02,
+        entry: 0,
+        exit: 0,
+        gross: 0,
+        fee: 0,
+        risk: 50,
+        ses: 'Londres',
+        setup: 'Captura Visual',
+        err: '',
+        mae: 0,
+        mfe: 0,
+        emo: 'Disciplinado',
+        notes: 'Registro creado desde captura',
+        img: b64
+      });
+      save(); renderAll();
+      document.getElementById('importImgInput').value = '';
+      alert('¡Captura adjuntada y guardada como nuevo registro limpio! Puedes editarlo cuando quieras.');
+      return;
+    }
+    
+    // Si escribiste texto, procesa exactamente ese texto con la imagen nueva
+    const added = parseStrictText(customText, b64);
     save(); renderAll();
-    
-    // RESTABLECER POR COMPLETO EL INPUT PARA EVITAR CACHÉ DEL NAVEGADOR
     document.getElementById('importImgInput').value = '';
-    document.getElementById('importImgStatus').textContent = 'Imagen procesada con éxito';
-    
-    alert(`¡Captura procesada correctamente! Se han importado ${added} operaciones nuevas asociadas a este archivo.`);
+    alert(`¡Captura procesada con éxito! Se han importado ${added} operaciones asociadas.`);
   });
 }
 
@@ -668,7 +691,7 @@ function importFromText(){
       alert('¡JSON procesado y cargado con éxito!');
       return;
     }
-    const added = parseIsolatedScreenshot(txt);
+    const added = parseStrictText(txt);
     save();renderAll();
     alert(`¡Se han procesado e importado ${added} operaciones desde el texto!`);
   } catch(err){
