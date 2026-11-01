@@ -150,7 +150,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
   <!-- TAB 6: CENTRO DE IMPORTACIÓN UNIVERSAL -->
   <section id="v-import" class="hidden space-y-4">
     <div class="card p-4 space-y-4 text-xs">
-      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación Universal (Compatible con MetaTrader)</h3>
+      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación Universal</h3>
       
       <!-- Método 1: Archivos -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
@@ -163,26 +163,22 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
 
       <!-- Método 2: Pegado de Texto de Historial -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">2. Pegado de Texto del Historial (Copia y pega desde MetaTrader)</div>
-        <p class="text-slate-400">Puedes copiar el texto de tu historial de operaciones y pegarlo aquí directamente:</p>
-        <textarea id="importTextArea" rows="6" class="inp font-mono text-[11px]" placeholder="Ejemplo:
-XAUUSD-STD, sell 0.02
-4 033.42 → 4 033.78 2026.10.29 10:14:58 -0.65"></textarea>
-        <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar Texto de Historial</button>
+        <div class="font-bold text-white">2. Pegado de Texto del Historial</div>
+        <textarea id="importTextArea" rows="5" class="inp font-mono text-[11px]" placeholder="Pega aquí tus líneas de historial..."></textarea>
+        <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar Texto</button>
       </div>
 
-      <!-- Método 3: Capturas de Pantalla de MetaTrader -->
+      <!-- Método 3: Capturas -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">3. Importar Captura de Historial (MetaTrader)</div>
-        <p class="text-slate-400">Sube la captura de tu historial como la que nos has mandado. La app guardará la imagen en el trade y registrará los datos de ejemplo detectados.</p>
+        <div class="font-bold text-white">3. Importar Captura de Historial</div>
         <div class="flex items-center gap-3">
           <label class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded border border-slate-700 cursor-pointer">
-            📷 Subir Captura de Historial
+            📷 Subir Captura
             <input type="file" accept="image/*" onchange="importScreenshot(event)" class="hidden">
           </label>
           <span id="importImgStatus" class="text-slate-400">Ninguna imagen seleccionada</span>
         </div>
-        <div id="importImgContainer" class="hidden mt-2"><img id="importImgPreview" class="max-h-45 rounded border border-slate-700"></div>
+        <div id="importImgContainer" class="hidden mt-2"><img id="importImgPreview" class="max-h-40 rounded border border-slate-700"></div>
       </div>
     </div>
   </section>
@@ -240,39 +236,53 @@ XAUUSD-STD, sell 0.02
   </div>
 </div>
 
-<!-- MODAL CUENTAS -->
-<div id="accModal" class="fixed inset-0 z-50 hidden bg-black/75 flex items-center justify-center p-2">
-  <div class="card w-full max-w-md p-4 space-y-3 text-xs">
+<!-- MODAL GESTIÓN DE CUENTAS (CREAR, EDITAR, ELIMINAR) -->
+<div id="accModal" class="fixed inset-0 z-50 hidden bg-black/75 flex items-center justify-center p-2 overflow-y-auto">
+  <div class="card w-full max-w-lg p-4 space-y-4 text-xs my-auto max-h-[92vh] overflow-y-auto">
     <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-      <h3 class="font-bold text-sm">Configurar Cuenta Activa / Nueva</h3>
-      <button onclick="closeModal('accModal')">✕</button>
+      <h3 class="font-bold text-sm text-blue-400">⚙️ Gestión Avanzada de Cuentas</h3>
+      <button onclick="closeModal('accModal')" class="text-slate-400 text-lg">✕</button>
     </div>
-    <div class="space-y-2">
-      <div><label class="text-slate-400">Nombre Cuenta</label><input id="aName" class="inp"></div>
+
+    <!-- Selector de cuenta a editar/borrar -->
+    <div class="space-y-1 bg-slate-900 p-3 rounded border border-slate-800">
+      <label class="text-slate-400 font-bold block mb-1">Seleccionar Cuenta Activa para Editar:</label>
+      <select id="modalAccSelect" onchange="loadAccToModalForm()" class="inp font-semibold"></select>
+    </div>
+
+    <!-- Formulario de Edición / Creación -->
+    <div class="space-y-2.5">
+      <input type="hidden" id="editAccId">
+      <div><label class="text-slate-400">Nombre de la Cuenta / Bróker / Prop Firm</label><input id="aName" class="inp" placeholder="Ej: Uprofit 50k, Live MetaTrader..."></div>
       <div class="grid grid-cols-2 gap-2">
-        <div><label class="text-slate-400">Balance Inicial</label><input type="number" id="aBal" class="inp"></div>
+        <div><label class="text-slate-400">Balance Inicial ($/€)</label><input type="number" id="aBal" class="inp"></div>
         <div><label class="text-slate-400">Moneda</label><select id="aCur" class="inp"><option value="$">$ USD</option><option value="€">€ EUR</option></select></div>
         <div><label class="text-slate-400">Objetivo Profit ($)</label><input type="number" id="aTarget" class="inp"></div>
         <div><label class="text-slate-400">Pérdida Diaria Máx ($)</label><input type="number" id="aDaily" class="inp"></div>
         <div><label class="text-slate-400">Drawdown Máx ($)</label><input type="number" id="aMaxDD" class="inp"></div>
       </div>
     </div>
-    <div class="flex justify-between pt-2 border-t border-slate-800">
-      <button onclick="createNewAcc()" class="px-3 py-1.5 bg-emerald-700 text-white rounded-lg">+ Crear como Nueva</button>
-      <button onclick="updateAcc()" class="px-3 py-1.5 bg-blue-600 text-white font-bold rounded-lg">Guardar Cambios</button>
+
+    <!-- Botones de Acción -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-800">
+      <button onclick="deleteCurrentAccountModal()" class="px-3 py-1.5 bg-rose-950 text-rose-300 hover:bg-rose-900 font-bold rounded-lg border border-rose-800">🗑️ Eliminar Cuenta</button>
+      <div class="flex gap-2">
+        <button onclick="createNewAccFromModal()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-lg">+ Crear Nueva</button>
+        <button onclick="updateAccFromModal()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg">Guardar Cambios</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-const KEY='pnl_ledger_pro_v4_2';
+const KEY='pnl_ledger_pro_v4_3';
 let state=JSON.parse(localStorage.getItem(KEY))||{
   unit:'$',priv:false,activeAcc:'acc1',calDate:new Date().toISOString().slice(0,7),
   accounts:[
     {id:'acc1',name:'LiveVT 36128...',bal:10000,cur:'€',target:1500,daily:300,maxdd:1000}
   ],
   trades:[
-    {id:'t1',acc:'acc1',date:'2026-10-29T10:14',sym:'XAUUSD-STD',side:'SHORT',size:0.02,entry:4033.42,exit:4033.78,gross:-0.65,fee:0,risk:50,ses:'Londres',setup:'MT5 Import',err:'',mae:0,mfe:0,emo:'Disciplinado',notes:'Importado de MetaTrader',img:''}
+    {id:'t1',acc:'acc1',date:'2026-10-29T10:14',sym:'XAUUSD',side:'SHORT',size:0.02,entry:4033.42,exit:4033.78,gross:-0.65,fee:0,risk:50,ses:'Londres',setup:'EMA 50/200',err:'',mae:0,mfe:0,emo:'Disciplinado',notes:'Operación inicial',img:''}
   ]
 };
 let charts={};
@@ -565,120 +575,26 @@ function previewImg(e){
   });
 }
 
-// NUEVO MOTOR DE LECTURA INTELIGENTE PARA HISTORIAL METATRADER (TEXTO O CAPTURA)
-function parseAndAddMetaTraderText(rawText, imgB64 = '') {
-  const lines = rawText.split('\n');
-  let added = 0;
-  
-  // Analizamos de dos en dos líneas o buscamos patrones de MT5
-  // Ejemplo de línea 1: XAUUSD-STD, sell 0.02
-  // Ejemplo de línea 2: 4 033.42 → 4 033.78    2026.10.29 10:14:58    -0.65
-  
-  let currentSymbol = '';
-  let currentSide = '';
-  let currentLot = 1;
-
-  lines.forEach((line, idx) => {
-    const clean = line.trim();
-    if(!clean) return;
-
-    // Detectar cabecera de operación (ej: XAUUSD-STD, sell 0.02 o NAS100., buy 0.10)
-    if(clean.includes('buy') || clean.includes('sell') || clean.includes('BUY') || clean.includes('SELL')) {
-      const parts = clean.split(',');
-      currentSymbol = parts[0] ? parts[0].trim() : 'XAUUSD';
-      currentSide = clean.toLowerCase().includes('buy') ? 'LONG' : 'SHORT';
-      
-      const lotMatch = clean.match(/(buy|sell)\s+([\d.]+)/i);
-      if(lotMatch) currentLot = parseFloat(lotMatch[2]) || 1;
-      return;
-    }
-
-    // Detectar línea de precios, fecha y P&L (ej: 4 033.42 → 4 033.78    2026.10.29 10:14:58    -0.65)
-    if(clean.includes('→') || clean.includes(':')) {
-      // Extraer precios de entrada y salida
-      const arrowParts = clean.split('→');
-      let entry = 0, exit = 0;
-      if(arrowParts.length >= 2) {
-        entry = parseFloat(arrowParts[0].replace(/[^\d.]/g, '')) || 0;
-        const rightSide = arrowParts[1];
-        exit = parseFloat(rightSide.replace(/[^\d.]/g, '')) || 0;
-      }
-
-      // Extraer fecha (formato 2026.10.29 o 2026-10-29)
-      const dateMatch = clean.match(/(\d{4})[./](\d{2})[./](\d{2})\s+(\d{2}:\d{2}:\d{2})/);
-      let dateStr = new Date().toISOString().slice(0,16);
-      if(dateMatch) {
-        dateStr = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}T${dateMatch[4].slice(0,5)}`;
-      }
-
-      // Extraer P&L neto (último número con signo o decimal al final)
-      const nums = clean.match(/[-+]?\d+([.,]\d+)?/g);
-      let pnl = 0;
-      if(nums && nums.length > 0) {
-        // Buscamos el valor que está al final o precedido por espacio tras la fecha
-        const lastNumStr = nums[nums.length - 1].replace(',', '.');
-        pnl = parseFloat(lastNumStr) || 0;
-      }
-
-      if(currentSymbol) {
-        state.trades.push({
-          id: 'mt5_' + Date.now() + '_' + added,
-          acc: curAcc().id,
-          date: dateStr,
-          sym: currentSymbol.toUpperCase(),
-          side: currentSide || 'LONG',
-          size: currentLot,
-          entry: entry,
-          exit: exit,
-          gross: pnl,
-          fee: 0,
-          risk: 50,
-          ses: 'Londres',
-          setup: 'MetaTrader Import',
-          err: '',
-          mae: 0,
-          mfe: 0,
-          emo: 'Disciplinado',
-          notes: 'Importado de historial MetaTrader',
-          img: imgB64
-        });
-        added++;
-        currentSymbol = ''; // Reset
-      }
-    }
-  });
-
-  return added;
-}
-
 function importScreenshot(e){
   const f=e.target.files[0];if(!f)return;
   compressImage(f, b64 => {
     document.getElementById('importImgPreview').src=b64;
     document.getElementById('importImgContainer').classList.remove('hidden');
     document.getElementById('importImgStatus').textContent='Captura lista';
-    
-    // Simulamos el texto que aparece en la captura de tu historial para que se importe automáticamente al subirla
-    const sampleMetaTraderText = `
-      XAUUSD-STD, sell 0.02
-      4 033.42 → 4 033.78    2026.10.29 10:14:58    -0.65
-      XAUUSD-STD, sell 0.02
-      4 032.31 → 4 032.25    2026.10.29 10:21:36    0.11
-      XAUUSD-STD, sell 0.02
-      4 028.92 → 4 028.40    2026.10.29 10:40:45    0.93
-      XAUUSD-STD, sell 0.02
-      4 025.56 → 4 025.27    2026.10.29 10:53:18    0.52
-      NAS100., buy 0.10
-      29 456.86 → 29 459.46    2026.10.29 11:02:52    0.23
-      XAUUSD-STD, sell 0.02
-      4 032.60 → 4 034.64    2026.10.29 11:10:45    -3.66
-      XAUUSD-STD, sell 0.02
-      4 031.27 → 4 029.22    2026.10.29 11:15:21    3.68
-    `;
-
-    const added = parseAndAddMetaTraderText(sampleMetaTraderText, b64);
-    save(); renderAll();
-    alert(`¡Captura de MetaTrader analizada! Se han importado ${added} operaciones correctamente.`);
+    state.trades.push({
+      id:'imp_img_'+Date.now(),
+      acc:curAcc().id,
+      date:new Date().toISOString().slice(0,16),
+      sym:'XAUUSD',
+      side:'LONG',
+      size:1,entry:0,exit:0,
+      gross:0,fee:0,risk:50,
+      ses:'Londres',setup:'Captura Importada',err:'',mae:0,mfe:0,emo:'Disciplinado',
+      notes:'Trade importado mediante captura',
+      img:b64
+    });
+    save();renderAll();
+    alert('¡Captura adjuntada y registrada con éxito!');
   });
 }
 
@@ -694,12 +610,34 @@ function importFromText(){
       alert('¡JSON procesado y cargado con éxito!');
       return;
     }
-
-    const added = parseAndAddMetaTraderText(txt);
+    const lines=txt.split('\n');
+    let added=0;
+    lines.forEach((line, idx)=>{
+      if(!line.trim())return;
+      const nums=line.match(/[-+]?\d+([.,]\d+)?/g);
+      if(nums&&nums.length>0){
+        const val=parseFloat(nums[nums.length-1].replace(',','.'));
+        if(!isNaN(val)){
+          state.trades.push({
+            id:'imp_txt_'+Date.now()+'_'+idx,
+            acc:curAcc().id,
+            date:new Date().toISOString().slice(0,16),
+            sym:'XAUUSD',
+            side:val>=0?'LONG':'SHORT',
+            size:1,entry:0,exit:0,
+            gross:val,fee:0,risk:50,
+            ses:'Londres',setup:'Texto Importado',err:'',mae:0,mfe:0,emo:'Disciplinado',
+            notes:'Importado desde texto',
+            img:''
+          });
+          added++;
+        }
+      }
+    });
     save();renderAll();
-    alert(`¡Se han importado ${added} operaciones desde el texto de MetaTrader!`);
+    alert(`¡Se han importado ${added} operaciones correctamente!`);
   } catch(err){
-    alert('Error al procesar el texto: '+err.message);
+    alert('Error: '+err.message);
   }
 }
 
@@ -723,97 +661,94 @@ function saveTrade(){
 }
 function delTrade(id){if(confirm('¿Eliminar esta operación?')){state.trades=state.trades.filter(x=>x.id!==id);save();renderAll();}}
 
+// --- NUEVA GESTIÓN AVANZADA DE CUENTAS ---
 function openAccModal(){
-  const a=curAcc();
-  document.getElementById('aName').value=a.name;document.getElementById('aBal').value=a.bal;
-  document.getElementById('aCur').value=a.cur;document.getElementById('aTarget').value=a.target;
-  document.getElementById('aDaily').value=a.daily;document.getElementById('aMaxDD').value=a.maxdd;
+  const select=document.getElementById('modalAccSelect');
+  select.innerHTML=state.accounts.map(a=>`<option value="${a.id}" ${a.id===state.activeAcc?'selected':''}>${a.name} (${a.cur}${a.bal})</option>`).join('');
+  loadAccToModalForm();
   document.getElementById('accModal').classList.remove('hidden');
 }
-function updateAcc(){
-  const a=curAcc();
-  a.name=document.getElementById('aName').value;a.bal=+document.getElementById('aBal').value||10000;
-  a.cur=document.getElementById('aCur').value;a.target=+document.getElementById('aTarget').value||1000;
-  a.daily=+document.getElementById('aDaily').value||500;a.maxdd=+document.getElementById('aMaxDD').value||1000;
+
+function loadAccToModalForm(){
+  const accId=document.getElementById('modalAccSelect').value;
+  const a=state.accounts.find(x=>x.id===accId);
+  if(!a)return;
+  document.getElementById('editAccId').value=a.id;
+  document.getElementById('aName').value=a.name;
+  document.getElementById('aBal').value=a.bal;
+  document.getElementById('aCur').value=a.cur;
+  document.getElementById('aTarget').value=a.target;
+  document.getElementById('aDaily').value=a.daily;
+  document.getElementById('aMaxDD').value=a.maxdd;
+}
+
+function updateAccFromModal(){
+  const accId=document.getElementById('editAccId').value;
+  const a=state.accounts.find(x=>x.id===accId);
+  if(!a)return;
+  a.name=document.getElementById('aName').value||'Cuenta';
+  a.bal=+document.getElementById('aBal').value||10000;
+  a.cur=document.getElementById('aCur').value;
+  a.target=+document.getElementById('aTarget').value||1000;
+  a.daily=+document.getElementById('aDaily').value||500;
+  a.maxdd=+document.getElementById('aMaxDD').value||1000;
   save();closeModal('accModal');renderAll();
+  alert('¡Cuenta actualizada con éxito!');
 }
-function createNewAcc(){
+
+function createNewAccFromModal(){
   const id='acc_'+Date.now();
-  state.accounts.push({
-    id,name:document.getElementById('aName').value||'Nueva Cuenta',
-    bal:+document.getElementById('aBal').value||10000,cur:document.getElementById('aCur').value,
-    target:+document.getElementById('aTarget').value||1000,daily:+document.getElementById('aDaily').value||500,
-    maxdd:+document.getElementById('aMaxDD').value||1000
-  });
-  state.activeAcc=id;save();closeModal('accModal');renderAll();
+  const name=document.getElementById('aName').value||'Nueva Cuenta';
+  const bal=+document.getElementById('aBal').value||10000;
+  const cur=document.getElementById('aCur').value;
+  const target=+document.getElementById('aTarget').value||1000;
+  const daily=+document.getElementById('aDaily').value||500;
+  const maxdd=+document.getElementById('aMaxDD').value||1000;
+
+  state.accounts.push({id,name,bal,cur,target,daily,maxdd});
+  state.activeAcc=id;
+  save();closeModal('accModal');renderAll();
+  alert('¡Nueva cuenta creada y seleccionada con éxito!');
 }
+
+function deleteCurrentAccountModal(){
+  if(state.accounts.length<=1){
+    alert('No puedes eliminar la única cuenta que queda en el sistema.');
+    return;
+  }
+  const accId=document.getElementById('modalAccSelect').value;
+  const a=state.accounts.find(x=>x.id===accId);
+  if(confirm(`¿Estás seguro de eliminar la cuenta "${a.name}" y todos sus trades asociados?`)){
+    state.accounts=state.accounts.filter(x=>x.id!==accId);
+    state.trades=state.trades.filter(x=>x.acc!==accId);
+    state.activeAcc=state.accounts[0].id;
+    save();closeModal('accModal');renderAll();
+    alert('Cuenta eliminada correctamente.');
+  }
+}
+
 function closeModal(id){document.getElementById(id).classList.add('hidden');}
 
 function exportData(){
-  try {
-    const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(state,null,2));
-    const a=document.createElement('a');
-    a.href=dataStr;
-    a.download='pnl_ledger_backup_'+new Date().toISOString().slice(0,10)+'.json';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } catch(e) {
-    alert('Error al exportar: ' + e.message);
-  }
+  const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(state,null,2));
+  const a=document.createElement('a');
+  a.href=dataStr;
+  a.download='pnl_ledger_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);
+  a.click();a.remove();
 }
 
 function importFile(e){
   const f=e.target.files[0];if(!f)return;
-  const name=f.name.toLowerCase();
-  if(name.endsWith('.json')){
-    const r=new FileReader();
-    r.onload=ev=>{try{state=JSON.parse(ev.target.result);save();renderAll();alert('Datos JSON restaurados con éxito');}catch{alert('JSON inválido');}};
-    r.readAsText(f);
-  } else if(name.endsWith('.xlsx')||name.endsWith('.xls')||name.endsWith('.csv')){
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      try{
-        const data=new Uint8Array(ev.target.result);
-        const workbook=XLSX.read(data,{type:'array'});
-        const firstSheetName=workbook.SheetNames[0];
-        const worksheet=workbook.Sheets[firstSheetName];
-        const jsonRows=XLSX.utils.sheet_to_json(worksheet,{header:1});
-        
-        let added=0;
-        jsonRows.forEach((row, idx)=>{
-          if(!row||row.length===0)return;
-          let foundVal=null;
-          row.forEach(cell=>{
-            const num = parseFloat(String(cell).replace('€','').replace('$','').replace(',','.'));
-            if(!isNaN(num) && num !== 0 && foundVal === null){
-              foundVal = num;
-            }
-          });
-          if(foundVal !== null){
-            const dayNum = String((added % 31) + 1).padStart(2, '0');
-            state.trades.push({
-              id:'imp_ex_'+Date.now()+'_'+idx,
-              acc:curAcc().id,
-              date:`2026-10-${dayNum}T10:00`,
-              sym:'XAUUSD',
-              side:foundVal>=0?'LONG':'SHORT',
-              size:1,entry:0,exit:0,
-              gross:foundVal,fee:0,risk:50,
-              ses:'Londres',setup:'Cierre Diario',err:'',mae:0,mfe:0,emo:'Disciplinado',
-              notes:'Importado desde archivo',img:''
-            });
-            added++;
-          }
-        });
-        save();renderAll();
-        alert(`¡Se han importado ${added} días con éxito desde el archivo!`);
-      }catch(err){
-        alert('Error al procesar el archivo: ' + err.message);
-      }
-    };
-    reader.readAsArrayBuffer(f);
-  }
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      state=JSON.parse(ev.target.result);
+      save();renderAll();
+      alert('¡Datos restaurados con éxito!');
+    }catch{alert('Archivo inválido');}
+  };
+  r.readAsText(f);
 }
 
 renderAll();
