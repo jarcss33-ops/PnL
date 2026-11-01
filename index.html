@@ -52,8 +52,11 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
 
 <main class="max-w-7xl mx-auto p-3 space-y-4">
 
-  <!-- REGLAS DE FONDEO / OBJETIVOS -->
-  <section id="propRules" class="card p-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs"></section>
+  <!-- REGLAS DE FONDEO / OBJETIVOS Y RACHA -->
+  <section class="grid grid-cols-1 lg:grid-cols-4 gap-3">
+    <div id="propRules" class="card p-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs lg:col-span-3"></div>
+    <div id="streakCard" class="card p-3 flex flex-col justify-center items-center text-xs"></div>
+  </section>
 
   <!-- TAB 1: DASHBOARD -->
   <section id="v-dash" class="space-y-4">
@@ -151,17 +154,16 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
         </label>
       </div>
 
-      <!-- Método 2: Pegado de Texto Inteligente (Regex) -->
+      <!-- Método 2: Pegado Inteligente de Texto -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">2. Pegado Inteligente de Texto o Listados</div>
-        <p class="text-slate-400">Pega tu listado (ej: <code class="text-emerald-300">01-10-2026: 0.00 €</code> o simplemente tus cantidades). La app detectará automáticamente fecha y ganancia/pérdida.</p>
-        <textarea id="importTextArea" rows="6" class="inp font-mono text-[11px]" placeholder="Pega aquí el texto..."></textarea>
+        <div class="font-bold text-white">2. Pegado Inteligente de Texto / Listados</div>
+        <textarea id="importTextArea" rows="5" class="inp font-mono text-[11px]" placeholder="Pega aquí tus fechas y cantidades (ej: 01-10-2026: +21.04 €)..."></textarea>
         <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar Texto Inteligente</button>
       </div>
 
-      <!-- Método 3: Capturas de Pantalla -->
+      <!-- Método 3: Capturas de Pantalla (Corregido y Optimizado) -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">3. Registrar con Captura de Pantalla</div>
+        <div class="font-bold text-white">3. Importar / Registrar con Captura de Pantalla</div>
         <div class="flex items-center gap-3">
           <label class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded border border-slate-700 cursor-pointer">
             📷 Subir Captura
@@ -195,7 +197,17 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
       <div><label class="text-slate-400">Riesgo Inicial 1R ($)</label><input type="number" step="any" id="tRisk" value="100" class="inp"></div>
       <div><label class="text-slate-400">Sesión</label><select id="tSes" class="inp"><option>Londres</option><option>Nueva York</option><option>Asia</option></select></div>
       <div><label class="text-slate-400">Estrategia (Setup)</label><input id="tSetup" placeholder="EMA 50/200..." class="inp"></div>
-      <div><label class="text-slate-400">Etiqueta Error</label><input id="tErr" placeholder="FOMO, Mover SL..." class="inp"></div>
+      <div>
+        <label class="text-slate-400">Etiqueta Error</label>
+        <select id="tErr" class="inp">
+          <option value="">Ninguno (Operación limpia)</option>
+          <option value="FOMO">FOMO</option>
+          <option value="Mover SL">Mover Stop Loss</option>
+          <option value="Entrada Anticipada">Entrada Anticipada</option>
+          <option value="Sobrepasaje de Lote">Exceso de Lotes</option>
+          <option value="Salida Temprana">Salida Temprana</option>
+        </select>
+      </div>
       <div><label class="text-slate-400">MAE ($ máx -)</label><input type="number" step="any" id="tMae" class="inp"></div>
       <div><label class="text-slate-400">MFE ($ máx +)</label><input type="number" step="any" id="tMfe" class="inp"></div>
       <div><label class="text-slate-400">Estado Emocional</label><select id="tEmo" class="inp"><option>Disciplinado</option><option>Confiado</option><option>Ansioso</option><option>Frustrado</option></select></div>
@@ -242,7 +254,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
 </div>
 
 <script>
-const KEY='pnl_ledger_pro_v3';
+const KEY='pnl_ledger_pro_v4';
 let state=JSON.parse(localStorage.getItem(KEY))||{
   unit:'$',priv:false,activeAcc:'acc1',calDate:new Date().toISOString().slice(0,7),
   accounts:[
@@ -308,6 +320,25 @@ function calcStats(list,acc){
   return {total,cnt,wr,pf,exp,maxDD,avgR,eq,eqCurve,ddCurve,labels};
 }
 
+function renderStreak(trades){
+  if(trades.length===0){
+    document.getElementById('streakCard').innerHTML=`<div class="text-slate-400">Sin racha</div><div class="font-bold text-sm">0 trades</div>`;
+    return;
+  }
+  let streak=0;
+  let isWin = net(trades[trades.length-1]) >= 0;
+  for(let i=trades.length-1; i>=0; i--){
+    const win = net(trades[i]) >= 0;
+    if(win === isWin) streak++;
+    else break;
+  }
+  const color = isWin ? 'text-emerald-400' : 'text-rose-400';
+  const text = isWin ? `🔥 Racha Ganadora (${streak})` : `⚠️ Racha Perdedora (${streak})`;
+  document.getElementById('streakCard').innerHTML=`
+    <div class="text-slate-400">Racha Actual</div>
+    <div class="font-bold text-sm ${color} mt-1">${text}</div>`;
+}
+
 function renderAll(){
   const acc=curAcc();
   const sel=document.getElementById('accSelect');
@@ -315,6 +346,7 @@ function renderAll(){
 
   const allAccTrades=state.trades.filter(t=>t.acc===acc.id).sort((a,b)=>a.date.localeCompare(b.date));
   const st=calcStats(allAccTrades,acc);
+  renderStreak(allAccTrades);
 
   const setups=[...new Set(allAccTrades.map(t=>t.setup).filter(Boolean))];
   const fs=document.getElementById('fSetup');const curFs=fs.value;
@@ -461,8 +493,9 @@ function openTradeModal(datePref){
   document.getElementById('tmTitle').textContent='Registrar Operación';
   document.getElementById('tId').value='';
   document.getElementById('tDate').value=(datePref?datePref+'T10:00':new Date().toISOString().slice(0,16));
-  ['tSym','tEntry','tExit','tGross','tSetup','tErr','tMae','tMfe','tNotes','tImgBase64'].forEach(id=>document.getElementById(id).value='');
+  ['tSym','tEntry','tExit','tGross','tSetup','tMae','tMfe','tNotes','tImgBase64'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('tFee').value=0;document.getElementById('tSize').value=1;document.getElementById('tRisk').value=50;
+  document.getElementById('tErr').value='';
   document.getElementById('imgStatus').textContent='Ninguna imagen seleccionada';
   document.getElementById('imgPreviewContainer').classList.add('hidden');
   document.getElementById('tradeModal').classList.remove('hidden');
@@ -477,7 +510,7 @@ function editTrade(id){
   document.getElementById('tExit').value=t.exit;document.getElementById('tGross').value=t.gross;
   document.getElementById('tFee').value=t.fee;document.getElementById('tRisk').value=t.risk;
   document.getElementById('tSes').value=t.ses;document.getElementById('tSetup').value=t.setup;
-  document.getElementById('tErr').value=t.err;document.getElementById('tMae').value=t.mae;
+  document.getElementById('tErr').value=t.err||'';document.getElementById('tMae').value=t.mae;
   document.getElementById('tMfe').value=t.mfe;document.getElementById('tEmo').value=t.emo;
   document.getElementById('tNotes').value=t.notes;
   document.getElementById('tImgBase64').value=t.img||'';
@@ -486,26 +519,48 @@ function editTrade(id){
   document.getElementById('tradeModal').classList.remove('hidden');
 }
 
+// Compresión inteligente de imágenes antes de guardar
+function compressImage(file, callback) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 800;
+      let width = img.width;
+      let height = img.height;
+      if (width > height) {
+        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+      } else {
+        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+      }
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      callback(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function previewImg(e){
   const f=e.target.files[0];if(!f)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    document.getElementById('tImgBase64').value=ev.target.result;
-    document.getElementById('imgPreview').src=ev.target.result;
+  compressImage(f, b64 => {
+    document.getElementById('tImgBase64').value=b64;
+    document.getElementById('imgPreview').src=b64;
     document.getElementById('imgPreviewContainer').classList.remove('hidden');
-    document.getElementById('imgStatus').textContent='Imagen adjuntada correctamente';
-  };
-  reader.readAsDataURL(f);
+    document.getElementById('imgStatus').textContent='Captura adjuntada y comprimida';
+  });
 }
 
 function importScreenshot(e){
   const f=e.target.files[0];if(!f)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const b64=ev.target.result;
+  compressImage(f, b64 => {
     document.getElementById('importImgPreview').src=b64;
     document.getElementById('importImgContainer').classList.remove('hidden');
-    document.getElementById('importImgStatus').textContent='Captura lista para asociar';
+    document.getElementById('importImgStatus').textContent='Captura lista';
     state.trades.push({
       id:'imp_img_'+Date.now(),
       acc:curAcc().id,
@@ -515,13 +570,12 @@ function importScreenshot(e){
       size:1,entry:0,exit:0,
       gross:0,fee:0,risk:50,
       ses:'Londres',setup:'Captura Importada',err:'',mae:0,mfe:0,emo:'Disciplinado',
-      notes:'Trade importado mediante captura de pantalla',
+      notes:'Trade importado mediante captura de pantalla optimizada',
       img:b64
     });
     save();renderAll();
     alert('¡Captura importada y convertida en registro con éxito!');
-  };
-  reader.readAsDataURL(f);
+  });
 }
 
 function importFromText(){
@@ -533,7 +587,7 @@ function importFromText(){
       if(parsed.trades){state=parsed;}
       else if(Array.isArray(parsed)){state.trades=parsed;}
       save();renderAll();
-      alert('¡JSON procesado y cargado con éxito desde el texto!');
+      alert('¡JSON procesado y cargado con éxito!');
       return;
     }
 
@@ -543,31 +597,24 @@ function importFromText(){
     lines.forEach((line, idx)=>{
       if(!line.trim()) return;
 
-      // 1. Buscar patrón de fecha (DD-MM-YYYY, YYYY-MM-DD o D/M/YYYY)
       let finalDate = '';
       const dateMatch = line.match(/(\d{2})[-/](\d{2})[-/](\d{4})/) || line.match(/(\d{4})[-/](\d{2})[-/](\d{2})/);
       
       if(dateMatch) {
         if(dateMatch[1].length === 4) {
-          // Formato YYYY-MM-DD
           finalDate = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
         } else {
-          // Formato DD-MM-YYYY
           finalDate = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
         }
       } else {
-        // Si no hay fecha explícita, asignar día correlativo de octubre 2026
         const dayNum = String((added % 31) + 1).padStart(2, '0');
         finalDate = `2026-10-${dayNum}`;
       }
 
-      // 2. Buscar la cantidad económica (ganancia o pérdida)
-      // Buscamos números que puedan tener signo +, - y decimales, ignorando símbolos de moneda
       const cleaned = line.replace(/[€$\s]/g, '');
       const numbers = cleaned.match(/[-+]?\d+([.,]\d+)?/g);
 
       if(numbers && numbers.length > 0) {
-        // Cogemos el último número encontrado en la línea (suele ser el importe del P&L)
         const valStr = numbers[numbers.length - 1].replace(',', '.');
         const val = parseFloat(valStr);
 
@@ -605,7 +652,7 @@ function saveTrade(){
     entry:+document.getElementById('tEntry').value||0,exit:+document.getElementById('tExit').value||0,
     gross:+document.getElementById('tGross').value||0,fee:+document.getElementById('tFee').value||0,
     risk:+document.getElementById('tRisk').value||50,ses:document.getElementById('tSes').value,
-    setup:document.getElementById('tSetup').value.trim(),err:document.getElementById('tErr').value.trim(),
+    setup:document.getElementById('tSetup').value.trim(),err:document.getElementById('tErr').value,
     mae:+document.getElementById('tMae').value||0,mfe:+document.getElementById('tMfe').value||0,
     emo:document.getElementById('tEmo').value,notes:document.getElementById('tNotes').value,
     img:document.getElementById('tImgBase64').value
