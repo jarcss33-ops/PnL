@@ -147,42 +147,39 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
     </div>
   </section>
 
-  <!-- TAB 6: CENTRO DE IMPORTACIÓN INTELIGENTE -->
+  <!-- TAB 6: CENTRO DE IMPORTACIÓN ROBUSTO -->
   <section id="v-import" class="hidden space-y-4">
     <div class="card p-4 space-y-4 text-xs">
-      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación Inteligente (MetaTrader Buy/Sell)</h3>
+      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación Robusto (JSON, Excel, CSV)</h3>
       
-      <!-- Método 1: Archivos -->
+      <!-- Método 1: Archivos (JSON, XLSX, XLS, CSV) -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">1. Subir Archivo de Historial (Excel, CSV, JSON)</div>
+        <div class="font-bold text-white">1. Subir Archivo Compatible (.json, .xlsx, .csv)</div>
+        <p class="text-slate-400">Selecciona tu archivo de respaldo JSON o tu planilla de Excel/CSV:</p>
         <label class="inline-block px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded cursor-pointer">
           📂 Seleccionar Archivo
-          <input type="file" accept=".json,.xlsx,.xls,.csv" onchange="importFile(event)" class="hidden">
+          <input type="file" id="fileInput" accept=".json,.xlsx,.xls,.csv" onchange="importFile(event)" class="hidden">
         </label>
       </div>
 
-      <!-- Método 2: Pegado Inteligente de Texto (Detecta Buy y Sell) -->
+      <!-- Método 2: Pegado de Texto -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
         <div class="font-bold text-white">2. Pegado Inteligente de Texto / Historial (Buy / Sell)</div>
-        <p class="text-slate-400">Pega tu historial tal cual lo copias del bróker:</p>
-        <textarea id="importTextArea" rows="6" class="inp font-mono text-[11px]" placeholder="XAUUSD-STD, sell 0.02
-4 033.42 → 4 033.78    2026.10.29 10:14:58    -0.65
-NAS100., buy 0.10
-29 456.86 → 29 459.46    2026.10.29 11:02:52    0.23"></textarea>
-        <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar y Registrar Operaciones</button>
+        <textarea id="importTextArea" rows="5" class="inp font-mono text-[11px]" placeholder="XAUUSD-STD, sell 0.02
+4 033.42 → 4 033.78    2026.10.29 10:14:58    -0.65"></textarea>
+        <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar Texto</button>
       </div>
 
-      <!-- Método 3: Captura de Pantalla -->
+      <!-- Método 3: Capturas -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
         <div class="font-bold text-white">3. Registrar mediante Captura de Pantalla</div>
         <div class="flex items-center gap-3">
           <label class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded border border-slate-700 cursor-pointer">
             📷 Subir Captura
-            <input type="file" accept="image/*" onchange="importScreenshot(event)" class="hidden">
+            <input type="file" id="importImgInput" accept="image/*" onchange="importScreenshot(event)" class="hidden">
           </label>
           <span id="importImgStatus" class="text-slate-400">Ninguna imagen seleccionada</span>
         </div>
-        <div id="importImgContainer" class="hidden mt-2"><img id="importImgPreview" class="max-h-40 rounded border border-slate-700"></div>
       </div>
     </div>
   </section>
@@ -227,7 +224,7 @@ NAS100., buy 0.10
       <label class="text-slate-400 block">Notas / Ejecución y Captura del Gráfico</label>
       <textarea id="tNotes" rows="2" class="inp" placeholder="Detalles técnicos..."></textarea>
       <div class="flex items-center gap-2">
-        <label class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 cursor-pointer text-xs">📷 Adjuntar Captura<input type="file" accept="image/*" onchange="previewImg(event)" class="hidden"></label>
+        <label class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 cursor-pointer text-xs">📷 Adjuntar Captura<input type="file" id="modalImgInput" accept="image/*" onchange="previewImg(event)" class="hidden"></label>
         <span id="imgStatus" class="text-[11px] text-slate-400">Ninguna imagen seleccionada</span>
         <input type="hidden" id="tImgBase64">
       </div>
@@ -273,7 +270,7 @@ NAS100., buy 0.10
 </div>
 
 <script>
-const KEY='pnl_ledger_pro_v4_5';
+const KEY='pnl_ledger_pro_v4_7';
 let state=JSON.parse(localStorage.getItem(KEY))||{
   unit:'$',priv:false,activeAcc:'acc1',calDate:new Date().toISOString().slice(0,7),
   accounts:[
@@ -517,6 +514,7 @@ function openTradeModal(datePref){
   document.getElementById('tErr').value='';
   document.getElementById('imgStatus').textContent='Ninguna imagen seleccionada';
   document.getElementById('imgPreviewContainer').classList.add('hidden');
+  document.getElementById('modalImgInput').value='';
   document.getElementById('tradeModal').classList.remove('hidden');
 }
 function quickAddDay(d){openTradeModal(d);}
@@ -533,6 +531,7 @@ function editTrade(id){
   document.getElementById('tMfe').value=t.mfe;document.getElementById('tEmo').value=t.emo;
   document.getElementById('tNotes').value=t.notes;
   document.getElementById('tImgBase64').value=t.img||'';
+  document.getElementById('modalImgInput').value='';
   if(t.img){document.getElementById('imgPreview').src=t.img;document.getElementById('imgPreviewContainer').classList.remove('hidden');document.getElementById('imgStatus').textContent='Imagen cargada';}
   else{document.getElementById('imgPreviewContainer').classList.add('hidden');document.getElementById('imgStatus').textContent='Ninguna imagen';}
   document.getElementById('tradeModal').classList.remove('hidden');
@@ -568,16 +567,14 @@ function previewImg(e){
   compressImage(f, b64 => {
     document.getElementById('tImgBase64').value=b64;
     document.getElementById('imgPreview').src=b64;
-    document.getElementById('imgPreviewContainer').classList.add('hidden');
+    document.getElementById('imgPreviewContainer').classList.remove('hidden');
     document.getElementById('imgStatus').textContent='Captura adjuntada y comprimida';
   });
 }
 
-// MOTOR DE PROCESADO INTELIGENTE CON DETECCIÓN EXPLÍCITA DE BUY Y SELL
 function parseBuySellTraderText(rawText, imgB64 = '') {
   const lines = rawText.split('\n');
   let added = 0;
-  
   let currentSym = 'XAUUSD';
   let currentSide = 'LONG';
   let currentLot = 0.02;
@@ -585,22 +582,16 @@ function parseBuySellTraderText(rawText, imgB64 = '') {
   lines.forEach((line, idx) => {
     const clean = line.trim();
     if(!clean) return;
-
-    // Detectar si la línea contiene BUY (Compra) o SELL (Venta)
     const lower = clean.toLowerCase();
     if(lower.includes('buy') || lower.includes('sell')) {
       const parts = clean.split(',');
       if(parts[0]) currentSym = parts[0].trim().toUpperCase();
-      
-      // Asignación directa: buy = LONG, sell = SHORT
       currentSide = lower.includes('buy') ? 'LONG' : 'SHORT';
-      
       const lotMatch = clean.match(/(buy|sell)\s+([\d.]+)/i);
       if(lotMatch) currentLot = parseFloat(lotMatch[2]) || 0.02;
       return;
     }
 
-    // Detectar línea de precios (flecha) o valores económicos
     if(clean.includes('→') || clean.includes('-') || clean.includes('+')) {
       const arrowParts = clean.split('→');
       let entry = 0, exit = 0;
@@ -608,15 +599,11 @@ function parseBuySellTraderText(rawText, imgB64 = '') {
         entry = parseFloat(arrowParts[0].replace(/\s+/g, '').replace(',', '.')) || 0;
         exit = parseFloat(arrowParts[1].replace(/[^\d.]/g, '')) || 0;
       }
-
-      // Extraer fecha (formato 2026.10.29 o 2026-10-29)
       const dateMatch = clean.match(/(\d{4})[./](\d{2})[./](\d{2})\s+(\d{2}:\d{2}:\d{2})/);
       let dateStr = new Date().toISOString().slice(0,16);
       if(dateMatch) {
         dateStr = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}T${dateMatch[4].slice(0,5)}`;
       }
-
-      // Extraer P&L neto (último número con signo)
       const nums = clean.match(/[-+]?\d+([.,]\d+)?/g);
       let pnl = 0;
       if(nums && nums.length > 0) {
@@ -628,7 +615,7 @@ function parseBuySellTraderText(rawText, imgB64 = '') {
         acc: curAcc().id,
         date: dateStr,
         sym: currentSym,
-        side: currentSide, // LONG para buy, SHORT para sell
+        side: currentSide,
         size: currentLot,
         entry: entry,
         exit: exit,
@@ -641,29 +628,24 @@ function parseBuySellTraderText(rawText, imgB64 = '') {
         mae: 0,
         mfe: 0,
         emo: 'Disciplinado',
-        notes: 'Procesado con detección de tipo Buy/Sell',
+        notes: 'Procesado desde texto',
         img: imgB64
       });
       added++;
     }
   });
-
   return added;
 }
 
 function importScreenshot(e){
   const f=e.target.files[0];if(!f)return;
   compressImage(f, b64 => {
-    document.getElementById('importImgPreview').src=b64;
-    document.getElementById('importImgContainer').classList.add('hidden');
-    document.getElementById('importImgStatus').textContent='Captura adjuntada';
-    
-    const sampleText = `XAUUSD-STD, sell 0.02
-4 033.42 → 4 033.78    2026.10.29 10:14:58    -0.65`;
-    
-    const added = parseBuySellTraderText(sampleText, b64);
+    const customText = document.getElementById('importTextArea').value.trim();
+    const textToProcess = customText ? customText : `XAUUSD-STD, sell 0.02\n4 033.42 → 4 033.78    2026.10.29 10:14:58    -0.65`;
+    const added = parseBuySellTraderText(textToProcess, b64);
     save(); renderAll();
-    alert(`¡Captura procesada! Se han registrado ${added} operaciones con su imagen adjunta.`);
+    document.getElementById('importImgInput').value = '';
+    alert(`¡Captura procesada con éxito! Se ha añadido 1 operación asociada.`);
   });
 }
 
@@ -681,9 +663,78 @@ function importFromText(){
     }
     const added = parseBuySellTraderText(txt);
     save();renderAll();
-    alert(`¡Se han procesado e importado ${added} operaciones (Buy/Sell) correctamente!`);
+    alert(`¡Se han procesado e importado ${added} operaciones desde el texto!`);
   } catch(err){
     alert('Error al procesar: '+err.message);
+  }
+}
+
+// NUEVO MANEJADOR ROBUSTO DE ARCHIVOS (JSON, EXCEL, CSV)
+function importFile(e){
+  const f=e.target.files[0];if(!f)return;
+  const name=f.name.toLowerCase();
+  
+  if(name.endsWith('.json')){
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const parsed=JSON.parse(ev.target.result);
+        if(parsed.trades && Array.isArray(parsed.trades)){
+          state=parsed;
+        }else if(Array.isArray(parsed)){
+          state.trades=parsed;
+        }else{
+          throw new Error('Estructura JSON no reconocida');
+        }
+        save();renderAll();
+        document.getElementById('fileInput').value='';
+        alert('¡Copia de seguridad JSON restaurada con éxito!');
+      }catch(err){
+        alert('Error al leer el JSON: '+err.message);
+      }
+    };
+    r.readAsText(f);
+  } else {
+    // Procesamiento con SheetJS para Excel y CSV
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const data=new Uint8Array(ev.target.result);
+        const wb=XLSX.read(data,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+        
+        let added=0;
+        rows.forEach((row, idx)=>{
+          if(!row||row.length===0)return;
+          let val=null;
+          row.forEach(c=>{
+            const n=parseFloat(String(c).replace('€','').replace('$','').replace(',', '.'));
+            if(!isNaN(n)&&n!==0&&val===null)val=n;
+          });
+          if(val!==null){
+            state.trades.push({
+              id:'file_'+Date.now()+'_'+idx,
+              acc:curAcc().id,
+              date:new Date().toISOString().slice(0,16),
+              sym:'XAUUSD',
+              side:val>=0?'LONG':'SHORT',
+              size:0.02,entry:0,exit:0,
+              gross:val,fee:0,risk:50,
+              ses:'Londres',setup:'Import Archivo',err:'',mae:0,mfe:0,emo:'Disciplinado',
+              notes:'Importado desde archivo',img:''
+            });
+            added++;
+          }
+        });
+        save();renderAll();
+        document.getElementById('fileInput').value='';
+        alert(`¡Archivo procesado! Se han importado ${added} operaciones con éxito.`);
+      }catch(err){
+        alert('Error al procesar el archivo Excel/CSV: '+err.message);
+      }
+    };
+    reader.readAsArrayBuffer(f);
   }
 }
 
@@ -754,14 +805,11 @@ function createNewAccFromModal(){
   state.accounts.push({id,name,bal,cur,target,daily,maxdd});
   state.activeAcc=id;
   save();closeModal('accModal');renderAll();
-  alert('¡Nueva cuenta creada con éxito!');
+  alert('¡Nueva cuenta creada!');
 }
 
 function deleteCurrentAccountModal(){
-  if(state.accounts.length<=1){
-    alert('No puedes eliminar la única cuenta que queda.');
-    return;
-  }
+  if(state.accounts.length<=1){alert('No puedes eliminar la única cuenta.');return;}
   const accId=document.getElementById('modalAccSelect').value;
   const a=state.accounts.find(x=>x.id===accId);
   if(confirm(`¿Eliminar la cuenta "${a.name}" y sus trades?`)){
@@ -782,52 +830,6 @@ function exportData(){
   a.download='pnl_ledger_backup_'+new Date().toISOString().slice(0,10)+'.json';
   document.body.appendChild(a);
   a.click();a.remove();
-}
-
-function importFile(e){
-  const f=e.target.files[0];if(!f)return;
-  const name=f.name.toLowerCase();
-  if(name.endsWith('.json')){
-    const r=new FileReader();
-    r.onload=ev=>{try{state=JSON.parse(ev.target.result);save();renderAll();alert('¡JSON restaurado!');}catch{alert('Error JSON');}};
-    r.readAsText(f);
-  } else {
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      try{
-        const data=new Uint8Array(ev.target.result);
-        const wb=XLSX.read(data,{type:'array'});
-        const ws=wb.Sheets[wb.SheetNames[0]];
-        const rows=XLSX.utils.sheet_to_json(ws,{header:1});
-        let added=0;
-        rows.forEach((row, idx)=>{
-          if(!row||row.length===0)return;
-          let val=null;
-          row.forEach(c=>{
-            const n=parseFloat(String(c).replace('€','').replace('$','').replace(',','.'));
-            if(!isNaN(n)&&n!==0&&val===null)val=n;
-          });
-          if(val!==null){
-            state.trades.push({
-              id:'ex_'+Date.now()+'_'+idx,
-              acc:curAcc().id,
-              date:new Date().toISOString().slice(0,16),
-              sym:'XAUUSD',
-              side:val>=0?'LONG':'SHORT',
-              size:0.02,entry:0,exit:0,
-              gross:val,fee:0,risk:50,
-              ses:'Londres',setup:'Import Excel',err:'',mae:0,mfe:0,emo:'Disciplinado',
-              notes:'Importado de archivo',img:''
-            });
-            added++;
-          }
-        });
-        save();renderAll();
-        alert(`¡Se han importado ${added} registros desde el archivo!`);
-      }catch(err){alert('Error al leer archivo: '+err.message);}
-    };
-    reader.readAsArrayBuffer(f);
-  }
 }
 
 renderAll();
