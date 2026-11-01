@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>PnL Ledger Pro</title>
+
+<!-- Configuración PWA / Pantalla Completa Real -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0f19">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -161,7 +169,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
         <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar Texto Inteligente</button>
       </div>
 
-      <!-- Método 3: Capturas de Pantalla (Corregido y Optimizado) -->
+      <!-- Método 3: Capturas de Pantalla -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
         <div class="font-bold text-white">3. Importar / Registrar con Captura de Pantalla</div>
         <div class="flex items-center gap-3">
@@ -493,7 +501,7 @@ function openTradeModal(datePref){
   document.getElementById('tmTitle').textContent='Registrar Operación';
   document.getElementById('tId').value='';
   document.getElementById('tDate').value=(datePref?datePref+'T10:00':new Date().toISOString().slice(0,16));
-  ['tSym','tEntry','tExit','tGross','tSetup','tMae','tMfe','tNotes','tImgBase64'].forEach(id=>document.getElementById(id).value='');
+  ['tSym','tEntry','tExit','tGross','tSetup','tErr','tMae','tMfe','tNotes','tImgBase64'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('tFee').value=0;document.getElementById('tSize').value=1;document.getElementById('tRisk').value=50;
   document.getElementById('tErr').value='';
   document.getElementById('imgStatus').textContent='Ninguna imagen seleccionada';
@@ -519,7 +527,6 @@ function editTrade(id){
   document.getElementById('tradeModal').classList.remove('hidden');
 }
 
-// Compresión inteligente de imágenes antes de guardar
 function compressImage(file, callback) {
   const reader = new FileReader();
   reader.onload = ev => {
