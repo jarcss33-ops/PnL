@@ -40,13 +40,13 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
 </header>
 
 <!-- NAV TABS -->
-<nav class="max-w-7xl mx-auto px-3 pt-3 flex gap-1.5 overflow-x-auto pb-1 text-xs sm:text-sm font-medium">
+<nav class="max-w-7xl mx-auto px-3 pt-3 flex flex-wrap gap-1.5 pb-1 text-xs sm:text-sm font-medium">
   <button onclick="showTab('dash')" id="t-dash" class="px-3 py-1.5 rounded-lg tab-active whitespace-nowrap">📊 Dashboard</button>
   <button onclick="showTab('cal')" id="t-cal" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">📅 Calendario</button>
   <button onclick="showTab('trades')" id="t-trades" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">📝 Operaciones</button>
-  <button onclick="showTab('analytics')" id="t-analytics" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">🔬 MAE/MFE & Sesiones</button>
-  <button onclick="showTab('sim')" id="t-sim" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">⚡ Simulador What-If</button>
-  <button onclick="showTab('import')" id="t-import" class="px-3 py-1.5 rounded-lg bg-emerald-900/80 text-emerald-100 whitespace-nowrap">📥 Centro de Importación</button>
+  <button onclick="showTab('analytics')" id="t-analytics" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">🔬 MAE/MFE</button>
+  <button onclick="showTab('sim')" id="t-sim" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">⚡ Simulador</button>
+  <button onclick="showTab('import')" id="t-import" class="px-3 py-1.5 rounded-lg bg-emerald-700 text-white whitespace-nowrap font-bold shadow-lg">📥 IMPORTAR DATOS</button>
   <button onclick="exportData()" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap ml-auto">💾 Exportar</button>
 </nav>
 
@@ -267,7 +267,14 @@ function fmt(v,acc=curAcc()){
 function showTab(id){
   ['dash','cal','trades','analytics','sim','import'].forEach(t=>{
     document.getElementById('v-'+t).classList.toggle('hidden',t!==id);
-    document.getElementById('t-'+t).className=t===id?'px-3 py-1.5 rounded-lg tab-active whitespace-nowrap':'px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap';
+    const btn=document.getElementById('t-'+t);
+    if(btn){
+      if(t===id){
+        btn.className=t==='import'?'px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold whitespace-nowrap shadow-lg':'px-3 py-1.5 rounded-lg tab-active whitespace-nowrap';
+      }else{
+        btn.className=t==='import'?'px-3 py-1.5 rounded-lg bg-emerald-700 text-white whitespace-nowrap font-bold shadow-lg':'px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap';
+      }
+    }
   });
   renderAll();
 }
@@ -499,7 +506,6 @@ function importScreenshot(e){
     document.getElementById('importImgPreview').src=b64;
     document.getElementById('importImgContainer').classList.remove('hidden');
     document.getElementById('importImgStatus').textContent='Captura lista para asociar';
-    // Crear un trade rápido con la captura adjunta
     state.trades.push({
       id:'imp_img_'+Date.now(),
       acc:curAcc().id,
@@ -522,7 +528,6 @@ function importFromText(){
   const txt=document.getElementById('importTextArea').value.trim();
   if(!txt){alert('El cuadro de texto está vacío');return;}
   try {
-    // Intentar primero si es JSON válido
     if(txt.startsWith('{')||txt.startsWith('[')){
       const parsed=JSON.parse(txt);
       if(parsed.trades){state=parsed;}
@@ -531,12 +536,10 @@ function importFromText(){
       alert('¡JSON procesado y cargado con éxito desde el texto!');
       return;
     }
-    // Si no es JSON, procesar línea por línea (CSV / formato libre)
     const lines=txt.split('\n');
     let added=0;
     lines.forEach((line, idx)=>{
       const parts=line.split(/[\t,;|]/).map(p=>p.trim());
-      // Buscar una fecha YYYY-MM-DD y un número que sea el P&L
       let foundDate='', foundVal=0;
       parts.forEach(p=>{
         if(p.match(/^\d{4}-\d{2}-\d{2}$/)) foundDate=p;
