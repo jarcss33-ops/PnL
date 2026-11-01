@@ -532,30 +532,32 @@ function importFile(e){
         const jsonRows=XLSX.utils.sheet_to_json(worksheet,{header:1});
         
         let added=0;
-        jsonRows.slice(1).forEach((row, idx)=>{
-          if(!row||row.length===0)return;
-          const dateStr=String(row[0]||new Date().toISOString().slice(0,10));
-          const sym=String(row[3]||row[1]||'XAUUSD').toUpperCase();
-          const profit=parseFloat(row[5]||row[7]||0);
-          if(!isNaN(profit)&&profit!==0){
-            state.trades.push({
-              id:'imp_'+Date.now()+'_'+idx,
-              acc:curAcc().id,
-              date:dateStr.includes('T')?dateStr:dateStr.replace(/\//g,'-')+'T10:00',
-              sym:sym.includes('/')?sym.split('/')[1].trim():sym,
-              side:String(row[2]||'comprar').toLowerCase().includes('vender')?'SHORT':'LONG',
-              size:parseFloat(row[3])||0.01,
-              entry:0,exit:0,
-              gross:profit,fee:0,risk:50,
-              ses:'Londres',setup:'Importado Excel',err:'',mae:0,mfe:0,emo:'Disciplinado',notes:'Importado desde archivo del bróker',img:''
-            });
-            added++;
+        jsonRows.forEach((row, idx)=>{
+          if(!row||row.length<3)return;
+          const dateStr=String(row[0]||'').trim();
+          // Verificar si row[0] tiene formato de fecha (YYYY-MM-DD)
+          if(dateStr.match(/^\d{4}-\d{2}-\d{2}$/)){
+            const profit=parseFloat(row[2]);
+            if(!isNaN(profit)){
+              state.trades.push({
+                id:'imp_ex_'+Date.now()+'_'+idx,
+                acc:curAcc().id,
+                date:dateStr+'T10:00',
+                sym:'XAUUSD',
+                side:profit>=0?'LONG':'SHORT',
+                size:1,
+                entry:0,exit:0,
+                gross:profit,fee:0,risk:50,
+                ses:'Londres',setup:'Cierre Diario Octubre',err:'',mae:0,mfe:0,emo:'Disciplinado',notes:'Importado desde Excel de Octubre',img:''
+              });
+              added++;
+            }
           }
         });
         save();renderAll();
-        alert(`Se han importado ${added} operaciones correctamente desde el archivo.`);
+        alert(`¡Se han importado ${added} días con éxito desde el Excel!`);
       }catch(err){
-        alert('Error al procesar el archivo Excel/CSV. Asegúrate de que tiene formato válido.');
+        alert('Error al procesar el archivo Excel: ' + err.message);
       }
     };
     reader.readAsArrayBuffer(f);
