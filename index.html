@@ -6,6 +6,8 @@
 <title>PnL Ledger Pro</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- Librería SheetJS para leer archivos Excel (.xlsx/.xls) y CSV directamente en el navegador -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif}
 .card{background:#131b2e;border:1px solid #1e293b;border-radius:.75rem}
@@ -46,7 +48,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
   <button onclick="showTab('analytics')" id="t-analytics" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">🔬 MAE/MFE & Sesiones</button>
   <button onclick="showTab('sim')" id="t-sim" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">⚡ Simulador What-If</button>
   <button onclick="exportData()" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap ml-auto">💾 Exportar</button>
-  <label class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap cursor-pointer">📂 Importar<input type="file" accept=".json" onchange="importData(event)" class="hidden"></label>
+  <label class="px-3 py-1.5 rounded-lg bg-emerald-800/80 text-emerald-100 whitespace-nowrap cursor-pointer" title="Sube tu Excel, CSV o JSON">📊 Importar Excel/JSON<input type="file" accept=".json,.xlsx,.xls,.csv" onchange="importFile(event)" class="hidden"></label>
 </nav>
 
 <main class="max-w-7xl mx-auto p-3 space-y-4">
@@ -147,7 +149,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
     <input type="hidden" id="tId">
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
       <div><label class="text-slate-400">Fecha y Hora</label><input type="datetime-local" id="tDate" class="inp"></div>
-      <div><label class="text-slate-400">Activo</label><input id="tSym" placeholder="XAUUSD, MNQ, EURUSD" class="inp uppercase"></div>
+      <div><label class="text-slate-400">Activo</label><input id="tSym" placeholder="XAUUSD, MNQ..." class="inp uppercase"></div>
       <div><label class="text-slate-400">Dirección</label><select id="tSide" class="inp"><option value="LONG">LONG (Compra)</option><option value="SHORT">SHORT (Venta)</option></select></div>
       <div><label class="text-slate-400">Lotes / Contratos</label><input type="number" step="any" id="tSize" value="1" class="inp"></div>
       <div><label class="text-slate-400">Precio Entrada</label><input type="number" step="any" id="tEntry" class="inp"></div>
@@ -156,13 +158,22 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
       <div><label class="text-slate-400">Comisiones / Swap</label><input type="number" step="any" id="tFee" value="0" class="inp"></div>
       <div><label class="text-slate-400">Riesgo Inicial 1R ($)</label><input type="number" step="any" id="tRisk" value="100" class="inp"></div>
       <div><label class="text-slate-400">Sesión</label><select id="tSes" class="inp"><option>Londres</option><option>Nueva York</option><option>Asia</option></select></div>
-      <div><label class="text-slate-400">Estrategia (Setup)</label><input id="tSetup" placeholder="EMA 50/200, SMC..." class="inp"></div>
-      <div><label class="text-slate-400">Etiqueta Error (opcional)</label><input id="tErr" placeholder="FOMO, Mover SL..." class="inp"></div>
-      <div><label class="text-slate-400">MAE ($ máx flotante -)</label><input type="number" step="any" id="tMae" placeholder="Ej: 45" class="inp"></div>
-      <div><label class="text-slate-400">MFE ($ máx flotante +)</label><input type="number" step="any" id="tMfe" placeholder="Ej: 220" class="inp"></div>
+      <div><label class="text-slate-400">Estrategia (Setup)</label><input id="tSetup" placeholder="EMA 50/200..." class="inp"></div>
+      <div><label class="text-slate-400">Etiqueta Error</label><input id="tErr" placeholder="FOMO, Mover SL..." class="inp"></div>
+      <div><label class="text-slate-400">MAE ($ máx -)</label><input type="number" step="any" id="tMae" class="inp"></div>
+      <div><label class="text-slate-400">MFE ($ máx +)</label><input type="number" step="any" id="tMfe" class="inp"></div>
       <div><label class="text-slate-400">Estado Emocional</label><select id="tEmo" class="inp"><option>Disciplinado</option><option>Confiado</option><option>Ansioso</option><option>Frustrado</option></select></div>
     </div>
-    <div class="text-xs"><label class="text-slate-400">Notas / Ejecución</label><textarea id="tNotes" rows="2" class="inp" placeholder="Detalles técnicos de la entrada y gestión..."></textarea></div>
+    <div class="text-xs space-y-2">
+      <label class="text-slate-400 block">Notas / Ejecución y Captura del Gráfico</label>
+      <textarea id="tNotes" rows="2" class="inp" placeholder="Detalles técnicos..."></textarea>
+      <div class="flex items-center gap-2">
+        <label class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 cursor-pointer text-xs">📷 Adjuntar Captura<input type="file" accept="image/*" onchange="previewImg(event)" class="hidden"></label>
+        <span id="imgStatus" class="text-[11px] text-slate-400">Ninguna imagen seleccionada</span>
+        <input type="hidden" id="tImgBase64">
+      </div>
+      <div id="imgPreviewContainer" class="hidden mt-2"><img id="imgPreview" class="max-h-32 rounded border border-slate-700"></div>
+    </div>
     <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
       <button onclick="closeModal('tradeModal')" class="px-3 py-1.5 text-xs bg-slate-800 rounded-lg">Cancelar</button>
       <button onclick="saveTrade()" class="px-4 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg">Guardar Trade</button>
@@ -195,18 +206,14 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
 </div>
 
 <script>
-const KEY='pnl_ledger_pro_v2';
+const KEY='pnl_ledger_pro_v3';
 let state=JSON.parse(localStorage.getItem(KEY))||{
   unit:'$',priv:false,activeAcc:'acc1',calDate:new Date().toISOString().slice(0,7),
   accounts:[
-    {id:'acc1',name:'Fondeo $50k EOD',bal:50000,cur:'$',target:3000,daily:1100,maxdd:2000},
-    {id:'acc2',name:'Cuenta Real €10k',bal:10000,cur:'€',target:1500,daily:300,maxdd:1000}
+    {id:'acc1',name:'LiveVT 36128...',bal:10000,cur:'€',target:1500,daily:300,maxdd:1000}
   ],
   trades:[
-    {id:'t1',acc:'acc1',date:'2026-10-27T09:30',sym:'XAUUSD',side:'LONG',size:1,entry:2735.2,exit:2741.0,gross:580,fee:6,risk:150,ses:'Londres',setup:'EMA 50/200',err:'',mae:40,mfe:620,emo:'Disciplinado',notes:'Tendencia limpia H1'},
-    {id:'t2',acc:'acc1',date:'2026-10-28T15:40',sym:'MNQ',side:'SHORT',size:2,entry:20450,exit:20485,gross:-140,fee:4,risk:140,ses:'Nueva York',setup:'SMC Liquidity',err:'Entrada anticipada',mae:155,mfe:30,emo:'Ansioso',notes:'Entré antes del cierre de vela'},
-    {id:'t3',acc:'acc1',date:'2026-10-29T10:15',sym:'EURUSD',side:'LONG',size:1,entry:1.0820,exit:1.0855,gross:350,fee:5,risk:100,ses:'Londres',setup:'EMA 50/200',err:'',mae:25,mfe:380,emo:'Disciplinado',notes:'Pullback exacto EMA 50'},
-    {id:'t4',acc:'acc1',date:'2026-10-30T16:10',sym:'XAUUSD',side:'LONG',size:1,entry:2750.0,exit:2754.4,gross:440,fee:6,risk:150,ses:'Nueva York',setup:'Breakout NY',err:'',mae:60,mfe:490,emo:'Confiado',notes:'Impulso post noticias'}
+    {id:'t1',acc:'acc1',date:'2026-10-19T10:45',sym:'XAUUSD',side:'SHORT',size:0.01,entry:2735.2,exit:2731.0,gross:41.68,fee:0,risk:50,ses:'Londres',setup:'EMA 50/200',err:'',mae:10,mfe:50,emo:'Disciplinado',notes:'Entrada scalping',img:''}
   ]
 };
 let charts={};
@@ -266,12 +273,10 @@ function renderAll(){
   const allAccTrades=state.trades.filter(t=>t.acc===acc.id).sort((a,b)=>a.date.localeCompare(b.date));
   const st=calcStats(allAccTrades,acc);
 
-  // Setups filter options
   const setups=[...new Set(allAccTrades.map(t=>t.setup).filter(Boolean))];
   const fs=document.getElementById('fSetup');const curFs=fs.value;
   fs.innerHTML='<option value="">Todas Estrategias</option>'+setups.map(s=>`<option value="${s}" ${s===curFs?'selected':''}>${s}</option>`).join('');
 
-  // Prop rules
   const today=new Date().toISOString().slice(0,10);
   const todayLoss=Math.abs(Math.min(0,allAccTrades.filter(t=>t.date.startsWith(today)).reduce((a,b)=>a+net(b),0)));
   const pTarget=Math.min(100,Math.max(0,(st.total/(acc.target||1))*100));
@@ -282,7 +287,6 @@ function renderAll(){
     <div><div class="flex justify-between mb-1"><span>⚠️ Pérdida Hoy (${acc.cur}${todayLoss.toFixed(0)} / ${acc.cur}${acc.daily})</span><span class="font-bold text-amber-400">${pDaily.toFixed(1)}%</span></div><div class="h-2 bg-slate-800 rounded overflow-hidden"><div class="h-full bg-amber-500" style="width:${pDaily}%"></div></div></div>
     <div><div class="flex justify-between mb-1"><span>🛡️ Max Drawdown (${acc.cur}${st.maxDD.toFixed(0)} / ${acc.cur}${acc.maxdd})</span><span class="font-bold text-rose-400">${pDD.toFixed(1)}%</span></div><div class="h-2 bg-slate-800 rounded overflow-hidden"><div class="h-full bg-rose-500" style="width:${pDD}%"></div></div></div>`;
 
-  // KPIs
   const kpis=[
     ['P&L Neto Total',fmt(st.total),st.total>=0?'text-emerald-400':'text-rose-400'],
     ['Balance Actual',state.priv?'••••':acc.cur+st.eq.toFixed(2),'text-white'],
@@ -356,6 +360,7 @@ function renderTradesTable(list,acc){
       <td class="p-2.5"><div>${t.setup||'-'}</div>${t.err?`<span class="text-[10px] text-rose-400">⚠ ${t.err}</span>`:''}</td>
       <td class="p-2.5 text-right font-bold ${n>=0?'text-emerald-400':'text-rose-400'}">${fmt(n,acc)}</td>
       <td class="p-2.5 text-center whitespace-nowrap">
+        ${t.img?`<a href="${t.img}" target="_blank" class="px-1.5 py-1 bg-blue-950 text-blue-300 rounded mr-1" title="Ver captura">📷</a>`:''}
         <button onclick="editTrade('${t.id}')" class="px-2 py-1 bg-slate-800 rounded mr-1">✏️</button>
         <button onclick="delTrade('${t.id}')" class="px-2 py-1 bg-rose-950 text-rose-300 rounded">🗑️</button>
       </td>
@@ -413,8 +418,10 @@ function openTradeModal(datePref){
   document.getElementById('tmTitle').textContent='Registrar Operación';
   document.getElementById('tId').value='';
   document.getElementById('tDate').value=(datePref?datePref+'T10:00':new Date().toISOString().slice(0,16));
-  ['tSym','tEntry','tExit','tGross','tSetup','tErr','tMae','tMfe','tNotes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('tFee').value=0;document.getElementById('tSize').value=1;document.getElementById('tRisk').value=100;
+  ['tSym','tEntry','tExit','tGross','tSetup','tErr','tMae','tMfe','tNotes','tImgBase64'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('tFee').value=0;document.getElementById('tSize').value=1;document.getElementById('tRisk').value=50;
+  document.getElementById('imgStatus').textContent='Ninguna imagen seleccionada';
+  document.getElementById('imgPreviewContainer').classList.add('hidden');
   document.getElementById('tradeModal').classList.remove('hidden');
 }
 function quickAddDay(d){openTradeModal(d);}
@@ -430,8 +437,24 @@ function editTrade(id){
   document.getElementById('tErr').value=t.err;document.getElementById('tMae').value=t.mae;
   document.getElementById('tMfe').value=t.mfe;document.getElementById('tEmo').value=t.emo;
   document.getElementById('tNotes').value=t.notes;
+  document.getElementById('tImgBase64').value=t.img||'';
+  if(t.img){document.getElementById('imgPreview').src=t.img;document.getElementById('imgPreviewContainer').classList.remove('hidden');document.getElementById('imgStatus').textContent='Imagen cargada';}
+  else{document.getElementById('imgPreviewContainer').classList.add('hidden');document.getElementById('imgStatus').textContent='Ninguna imagen';}
   document.getElementById('tradeModal').classList.remove('hidden');
 }
+
+function previewImg(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    document.getElementById('tImgBase64').value=ev.target.result;
+    document.getElementById('imgPreview').src=ev.target.result;
+    document.getElementById('imgPreviewContainer').classList.remove('hidden');
+    document.getElementById('imgStatus').textContent='Imagen adjuntada correctamente';
+  };
+  reader.readAsDataURL(f);
+}
+
 function saveTrade(){
   const id=document.getElementById('tId').value||'tr_'+Date.now();
   const obj={
@@ -440,10 +463,11 @@ function saveTrade(){
     side:document.getElementById('tSide').value,size:+document.getElementById('tSize').value||1,
     entry:+document.getElementById('tEntry').value||0,exit:+document.getElementById('tExit').value||0,
     gross:+document.getElementById('tGross').value||0,fee:+document.getElementById('tFee').value||0,
-    risk:+document.getElementById('tRisk').value||100,ses:document.getElementById('tSes').value,
+    risk:+document.getElementById('tRisk').value||50,ses:document.getElementById('tSes').value,
     setup:document.getElementById('tSetup').value.trim(),err:document.getElementById('tErr').value.trim(),
     mae:+document.getElementById('tMae').value||0,mfe:+document.getElementById('tMfe').value||0,
-    emo:document.getElementById('tEmo').value,notes:document.getElementById('tNotes').value
+    emo:document.getElementById('tEmo').value,notes:document.getElementById('tNotes').value,
+    img:document.getElementById('tImgBase64').value
   };
   const idx=state.trades.findIndex(x=>x.id===id);
   if(idx>=0)state.trades[idx]=obj;else state.trades.push(obj);
@@ -482,11 +506,55 @@ function exportData(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='pnl_ledger_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();
 }
-function importData(e){
+
+function importFile(e){
   const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{try{state=JSON.parse(ev.target.result);save();renderAll();alert('Datos restaurados correctamente');}catch{alert('Archivo inválido');}};
-  r.readAsText(f);
+  const name=f.name.toLowerCase();
+  if(name.endsWith('.json')){
+    const r=new FileReader();
+    r.onload=ev=>{try{state=JSON.parse(ev.target.result);save();renderAll();alert('Datos JSON restaurados con éxito');}catch{alert('JSON inválido');}};
+    r.readAsText(f);
+  } else if(name.endsWith('.xlsx')||name.endsWith('.xls')||name.endsWith('.csv')){
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const data=new Uint8Array(ev.target.result);
+        const workbook=XLSX.read(data,{type:'array'});
+        const firstSheetName=workbook.SheetNames[0];
+        const worksheet=workbook.Sheets[firstSheetName];
+        const jsonRows=XLSX.utils.sheet_to_json(worksheet,{header:1});
+        
+        // Parse rows and convert to trades
+        let added=0;
+        jsonRows.slice(1).forEach((row, idx)=>{
+          if(!row||row.length===0)return;
+          // Look for potential columns in broker export
+          const dateStr=String(row[0]||new Date().toISOString().slice(0,10));
+          const sym=String(row[3]||row[1]||'XAUUSD').toUpperCase();
+          const profit=parseFloat(row[5]||row[7]||0);
+          if(!isNaN(profit)&&profit!==0){
+            state.trades.push({
+              id:'imp_'+Date.now()+'_'+idx,
+              acc:curAcc().id,
+              date:dateStr.includes('T')?dateStr:dateStr.replace(/\//g,'-')+'T10:00',
+              sym:sym.includes('/')?sym.split('/')[1].trim():sym,
+              side:String(row[2]||'comprar').toLowerCase().includes('vender')?'SHORT':'LONG',
+              size:parseFloat(row[3])||0.01,
+              entry:0,exit:0,
+              gross:profit,fee:0,risk:50,
+              ses:'Londres',setup:'Importado Excel',err:'',mae:0,mfe:0,emo:'Disciplinado',notes:'Importado desde archivo del bróker',img:''
+            });
+            added++;
+          }
+        });
+        save();renderAll();
+        alert(`Se han importado ${added} operaciones correctamente desde el archivo.`);
+      }catch(err){
+        alert('Error al procesar el archivo Excel/CSV. Asegúrate de que tiene formato válido.');
+      }
+    };
+    reader.readAsArrayBuffer(f);
+  }
 }
 
 renderAll();
