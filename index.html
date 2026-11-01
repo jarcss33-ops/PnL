@@ -151,11 +151,12 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
         </label>
       </div>
 
-      <!-- Método 2: Pegado de Texto / Listas -->
+      <!-- Método 2: Pegado de Texto Inteligente (Regex) -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">2. Pegar Texto o Listas de P&L</div>
-        <textarea id="importTextArea" rows="5" class="inp font-mono text-[11px]" placeholder="Pega aquí tus cantidades o listados (ej: 0.57, 21.04, 23.88, -11.02...)."></textarea>
-        <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar y Cargar Texto</button>
+        <div class="font-bold text-white">2. Pegado Inteligente de Texto o Listados</div>
+        <p class="text-slate-400">Pega tu listado (ej: <code class="text-emerald-300">01-10-2026: 0.00 €</code> o simplemente tus cantidades). La app detectará automáticamente fecha y ganancia/pérdida.</p>
+        <textarea id="importTextArea" rows="6" class="inp font-mono text-[11px]" placeholder="Pega aquí el texto..."></textarea>
+        <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar Texto Inteligente</button>
       </div>
 
       <!-- Método 3: Capturas de Pantalla -->
@@ -535,32 +536,61 @@ function importFromText(){
       alert('¡JSON procesado y cargado con éxito desde el texto!');
       return;
     }
+
     const lines=txt.split('\n');
     let added=0;
+
     lines.forEach((line, idx)=>{
-      const cleaned = line.replace(/[€$\s]/g, '');
-      const numMatch = cleaned.match(/[-+]?\d+([.,]\d+)?/);
-      if(numMatch){
-        const val = parseFloat(numMatch[0].replace(',', '.'));
+      if(!line.trim()) return;
+
+      // 1. Buscar patrón de fecha (DD-MM-YYYY, YYYY-MM-DD o D/M/YYYY)
+      let finalDate = '';
+      const dateMatch = line.match(/(\d{2})[-/](\d{2})[-/](\d{4})/) || line.match(/(\d{4})[-/](\d{2})[-/](\d{2})/);
+      
+      if(dateMatch) {
+        if(dateMatch[1].length === 4) {
+          // Formato YYYY-MM-DD
+          finalDate = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+        } else {
+          // Formato DD-MM-YYYY
+          finalDate = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+        }
+      } else {
+        // Si no hay fecha explícita, asignar día correlativo de octubre 2026
         const dayNum = String((added % 31) + 1).padStart(2, '0');
-        const dateStr = `2026-10-${dayNum}`;
-        
-        state.trades.push({
-          id:'imp_txt_'+Date.now()+'_'+idx,
-          acc:curAcc().id,
-          date:dateStr+'T10:00',
-          sym:'XAUUSD',
-          side:val>=0?'LONG':'SHORT',
-          size:1,entry:0,exit:0,
-          gross:val,fee:0,risk:50,
-          ses:'Londres',setup:'Importado Texto',err:'',mae:0,mfe:0,emo:'Disciplinado',
-          notes:'Cargado desde texto plano',img:''
-        });
-        added++;
+        finalDate = `2026-10-${dayNum}`;
+      }
+
+      // 2. Buscar la cantidad económica (ganancia o pérdida)
+      // Buscamos números que puedan tener signo +, - y decimales, ignorando símbolos de moneda
+      const cleaned = line.replace(/[€$\s]/g, '');
+      const numbers = cleaned.match(/[-+]?\d+([.,]\d+)?/g);
+
+      if(numbers && numbers.length > 0) {
+        // Cogemos el último número encontrado en la línea (suele ser el importe del P&L)
+        const valStr = numbers[numbers.length - 1].replace(',', '.');
+        const val = parseFloat(valStr);
+
+        if(!isNaN(val)) {
+          state.trades.push({
+            id:'imp_regex_'+Date.now()+'_'+idx,
+            acc:curAcc().id,
+            date:finalDate+'T10:00',
+            sym:'XAUUSD',
+            side:val>=0?'LONG':'SHORT',
+            size:1,entry:0,exit:0,
+            gross:val,fee:0,risk:50,
+            ses:'Londres',setup:'Importado Inteligente',err:'',mae:0,mfe:0,emo:'Disciplinado',
+            notes:'Importado mediante texto con Regex',
+            img:''
+          });
+          added++;
+        }
       }
     });
+
     save();renderAll();
-    alert(`¡Se han importado ${added} registros correctamente desde el texto!`);
+    alert(`¡Se han importado ${added} registros inteligentes correctamente!`);
   } catch(err){
     alert('Error al procesar el texto: '+err.message);
   }
