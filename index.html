@@ -14,7 +14,6 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<!-- Librería Tesseract.js para OCR automático de capturas -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <style>
@@ -150,10 +149,10 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
     </div>
   </section>
 
-  <!-- TAB 6: CENTRO DE IMPORTACIÓN OCR -->
+  <!-- TAB 6: CENTRO DE IMPORTACIÓN -->
   <section id="v-import" class="hidden space-y-4">
     <div class="card p-4 space-y-4 text-xs">
-      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación con OCR Inteligente</h3>
+      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación v5.2</h3>
       
       <!-- Método 1: Archivos -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
@@ -167,14 +166,14 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
       <!-- Método 2: Pegado de Texto -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
         <div class="font-bold text-white">2. Pegado de Texto / Historial (Buy / Sell)</div>
-        <textarea id="importTextArea" rows="5" class="inp font-mono text-[11px]" placeholder="Pega aquí tu historial..."></textarea>
+        <textarea id="importTextArea" rows="6" class="inp font-mono text-[11px]" placeholder="Pega aquí tu historial..."></textarea>
         <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar Texto</button>
       </div>
 
       <!-- Método 3: Captura de Pantalla con OCR Automático -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">3. Escanear Captura de Pantalla automáticamente (OCR)</div>
-        <p class="text-slate-400">Sube una captura de tu historial de MetaTrader. La aplicación leerá los textos de la imagen y extraerá los trades de forma autónoma.</p>
+        <div class="font-bold text-white">3. Escanear Captura de Pantalla (OCR)</div>
+        <p class="text-slate-400">Sube una captura de tu historial de MetaTrader para extraer los trades automáticamente.</p>
         <div class="flex items-center gap-3">
           <label class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded cursor-pointer">
             📷 Escanear Captura (OCR)
@@ -272,7 +271,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
 </div>
 
 <script>
-const KEY='pnl_ledger_pro_v5_1';
+const KEY='pnl_ledger_pro_v5_2';
 let state=JSON.parse(localStorage.getItem(KEY))||{
   unit:'$',priv:false,activeAcc:'acc1',calDate:new Date().toISOString().slice(0,7),
   accounts:[
@@ -306,8 +305,16 @@ function showTab(id){
       }
     }
   });
+
+  // SI SE ABRE LA PESTAÑA DE IMPORTAR DATOS, LIMPIAR EL TEXTAREA AUTOMÁTICAMENTE
+  if(id === 'import') {
+    const txtArea = document.getElementById('importTextArea');
+    if(txtArea) txtArea.value = '';
+  }
+
   renderAll();
 }
+
 function setUnit(u){
   state.unit=u;['$','%','R'].forEach(x=>document.getElementById('u-'+x).classList.toggle('tab-active',x===u));
   save();renderAll();
@@ -574,7 +581,6 @@ function previewImg(e){
   });
 }
 
-// MOTOR DE PROCESADO OCR AUTOMÁTICO DESDE CAPTURA
 function parseOCRText(rawText, imgB64 = '') {
   const lines = rawText.split('\n');
   let added = 0;
@@ -587,7 +593,6 @@ function parseOCRText(rawText, imgB64 = '') {
     if(!clean) return;
     const lower = clean.toLowerCase();
     
-    // Detectar activo y dirección (Buy/Sell)
     if(lower.includes('buy') || lower.includes('sell') || lower.includes('compra') || lower.includes('venta')) {
       const parts = clean.split(',');
       if(parts[0]) currentSym = parts[0].trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -599,7 +604,6 @@ function parseOCRText(rawText, imgB64 = '') {
       return;
     }
 
-    // Detectar líneas con números, precios o resultados en dinero
     if(clean.includes('→') || clean.includes('-') || clean.includes('+') || /\d+[.,]\d+/.test(clean)) {
       const arrowParts = clean.split('→');
       let entry = 0, exit = 0;
@@ -656,13 +660,11 @@ function importScreenshotOCR(e){
   statusEl.className = 'text-amber-400 font-semibold';
 
   compressImage(file, b64 => {
-    // Usamos Tesseract para leer el texto de la imagen en español e inglés
     Tesseract.recognize(
       b64,
       'eng+spa',
       { logger: m => { if(m.status==='recognizing text') statusEl.textContent = `⏳ Escaneando: ${Math.round(m.progress * 100)}%`; } }
     ).then(({ data: { text } }) => {
-      console.log("Texto OCR detectado:", text);
       const added = parseOCRText(text, b64);
       save(); renderAll();
       
