@@ -141,7 +141,6 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
   <section id="v-import" class="hidden space-y-4">
     <div class="card p-4 space-y-4 text-xs">
       <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación Universal</h3>
-      <p class="text-slate-400">Pega tus datos abajo en cualquier formato (números de P&L, listas o JSON) o sube un archivo:</p>
       
       <!-- Método 1: Archivos -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
@@ -152,11 +151,24 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
         </label>
       </div>
 
-      <!-- Método 2: Pegado de Texto / JSON / CSV -->
+      <!-- Método 2: Pegado de Texto / Listas -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">2. Pegar Texto, Listas o JSON (¡Súper Flexible!)</div>
-        <textarea id="importTextArea" rows="6" class="inp font-mono text-[11px]" placeholder="Pega aquí el JSON o simplemente una lista de cantidades de P&L (ej: 0.57, 21.04, 23.88, -11.02...)."></textarea>
-        <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar y Cargar Datos Pegados</button>
+        <div class="font-bold text-white">2. Pegar Texto o Listas de P&L</div>
+        <textarea id="importTextArea" rows="5" class="inp font-mono text-[11px]" placeholder="Pega aquí tus cantidades o listados (ej: 0.57, 21.04, 23.88, -11.02...)."></textarea>
+        <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar y Cargar Texto</button>
+      </div>
+
+      <!-- Método 3: Capturas de Pantalla -->
+      <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
+        <div class="font-bold text-white">3. Registrar con Captura de Pantalla</div>
+        <div class="flex items-center gap-3">
+          <label class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded border border-slate-700 cursor-pointer">
+            📷 Subir Captura
+            <input type="file" accept="image/*" onchange="importScreenshot(event)" class="hidden">
+          </label>
+          <span id="importImgStatus" class="text-slate-400">Ninguna imagen seleccionada</span>
+        </div>
+        <div id="importImgContainer" class="hidden mt-2"><img id="importImgPreview" class="max-h-40 rounded border border-slate-700"></div>
       </div>
     </div>
   </section>
@@ -485,6 +497,32 @@ function previewImg(e){
   reader.readAsDataURL(f);
 }
 
+function importScreenshot(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const b64=ev.target.result;
+    document.getElementById('importImgPreview').src=b64;
+    document.getElementById('importImgContainer').classList.remove('hidden');
+    document.getElementById('importImgStatus').textContent='Captura lista para asociar';
+    state.trades.push({
+      id:'imp_img_'+Date.now(),
+      acc:curAcc().id,
+      date:new Date().toISOString().slice(0,16),
+      sym:'XAUUSD',
+      side:'LONG',
+      size:1,entry:0,exit:0,
+      gross:0,fee:0,risk:50,
+      ses:'Londres',setup:'Captura Importada',err:'',mae:0,mfe:0,emo:'Disciplinado',
+      notes:'Trade importado mediante captura de pantalla',
+      img:b64
+    });
+    save();renderAll();
+    alert('¡Captura importada y convertida en registro con éxito!');
+  };
+  reader.readAsDataURL(f);
+}
+
 function importFromText(){
   const txt=document.getElementById('importTextArea').value.trim();
   if(!txt){alert('El cuadro de texto está vacío');return;}
@@ -497,17 +535,14 @@ function importFromText(){
       alert('¡JSON procesado y cargado con éxito desde el texto!');
       return;
     }
-    // Procesar línea por línea buscando cualquier número que parezca un P&L
     const lines=txt.split('\n');
     let added=0;
     lines.forEach((line, idx)=>{
-      // Limpiar y buscar números (incluso con signo +, - o decimales)
       const cleaned = line.replace(/[€$\s]/g, '');
       const numMatch = cleaned.match(/[-+]?\d+([.,]\d+)?/);
       if(numMatch){
         const val = parseFloat(numMatch[0].replace(',', '.'));
-        // Asignar una fecha correlativa de octubre de 2026 basada en el orden de las líneas
-        const dayNum = String((idx % 31) + 1).padStart(2, '0');
+        const dayNum = String((added % 31) + 1).padStart(2, '0');
         const dateStr = `2026-10-${dayNum}`;
         
         state.trades.push({
@@ -518,7 +553,7 @@ function importFromText(){
           side:val>=0?'LONG':'SHORT',
           size:1,entry:0,exit:0,
           gross:val,fee:0,risk:50,
-          ses:'Londres',setup:'Importado Flexible',err:'',mae:0,mfe:0,emo:'Disciplinado',
+          ses:'Londres',setup:'Importado Texto',err:'',mae:0,mfe:0,emo:'Disciplinado',
           notes:'Cargado desde texto plano',img:''
         });
         added++;
@@ -611,7 +646,6 @@ function importFile(e){
         let added=0;
         jsonRows.forEach((row, idx)=>{
           if(!row||row.length===0)return;
-          // Buscar cualquier número en la fila que pueda ser un P&L
           let foundVal=null;
           row.forEach(cell=>{
             const num = parseFloat(String(cell).replace('€','').replace('$','').replace(',','.'));
