@@ -1,1772 +1,495 @@
-```html
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PnL Ledger Pro — Trading Journal & Analytics</title>
-
-  <!-- Fuente Inter y JetBrains Mono para cifras financieras -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-            }
-          }
-        }
-      }
-    };
-  </script>
-
-  <!-- Chart.js y Lucide Icons -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <style>
-    /* Scrollbars elegantes estilo terminal cuantitativa */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.45); }
-
-    .tabular-nums { font-variant-numeric: tabular-nums; }
-
-    /* Transiciones suaves */
-    .fade-in { animation: fadeIn 0.2s ease-out; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    canvas { width: 100% !important; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>PnL Ledger Pro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif}
+.card{background:#131b2e;border:1px solid #1e293b;border-radius:.75rem}
+.inp{background:#0b0f19;border:1px solid #334155;border-radius:.5rem;padding:.45rem .65rem;color:#f8fafc;width:100%;font-size:.875rem}
+.inp:focus{outline:none;border-color:#3b82f6}
+.tab-active{background:#2563eb;color:#fff}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+</style>
 </head>
-<body class="bg-slate-50 text-slate-900 dark:bg-zinc-950 dark:text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white min-h-screen flex flex-col lg:flex-row overflow-x-hidden transition-colors duration-200">
+<body class="min-h-screen pb-16">
 
-  <!-- OVERLAY MENÚ MÓVIL -->
-  <div id="mobileOverlay" onclick="toggleMobileSidebar(false)" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 hidden lg:hidden"></div>
-
-  <!-- SIDEBAR DE NAVEGACIÓN -->
-  <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-64 shrink-0 bg-white dark:bg-zinc-900/95 border-r border-slate-200 dark:border-zinc-800 flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
-    <div>
-      <!-- Logo -->
-      <div class="h-16 px-5 flex items-center justify-between border-b border-slate-200 dark:border-zinc-800">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-            <i data-lucide="candlestick-chart" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="font-bold text-sm tracking-tight leading-none flex items-center gap-1.5">
-              <span>PnL Ledger</span>
-              <span class="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">PRO</span>
-            </div>
-            <p class="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">Quant Trading Journal</p>
-          </div>
-        </div>
-        <button onclick="toggleMobileSidebar(false)" class="lg:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <!-- Botón Acción Principal: Nuevo Trade -->
-      <div class="p-4">
-        <button onclick="openTradeModal()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i>
-          <span>Registrar Operación</span>
-        </button>
-      </div>
-
-      <!-- Menú de vistas -->
-      <nav class="px-3 space-y-1">
-        <button onclick="switchTab('dashboard')" data-tab="dashboard" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition">
-          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-          <span>Dashboard & KPIs</span>
-        </button>
-        <button onclick="switchTab('calendar')" data-tab="calendar" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition">
-          <i data-lucide="calendar-days" class="w-4 h-4"></i>
-          <span>Calendario P&L</span>
-        </button>
-        <button onclick="switchTab('trades')" data-tab="trades" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition">
-          <div class="flex items-center gap-3">
-            <i data-lucide="table-properties" class="w-4 h-4"></i>
-            <span>Bitácora de Trades</span>
-          </div>
-          <span id="sidebarTradeCount" class="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300">0</span>
-        </button>
-        <button onclick="switchTab('analytics')" data-tab="analytics" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition">
-          <i data-lucide="bar-chart-big" class="w-4 h-4"></i>
-          <span>Analítica & MAE/MFE</span>
-        </button>
-        <button onclick="switchTab('whatif')" data-tab="whatif" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition">
-          <i data-lucide="sparkles" class="w-4 h-4"></i>
-          <span>Simulador ¿Y si...?</span>
-        </button>
-        <button onclick="switchTab('accounts')" data-tab="accounts" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition">
-          <i data-lucide="wallet-cards" class="w-4 h-4"></i>
-          <span>Cuentas & Datos</span>
-        </button>
-      </nav>
+<!-- HEADER -->
+<header class="sticky top-0 z-30 bg-[#0b0f19]/95 backdrop-blur border-b border-slate-800 px-3 py-2.5">
+  <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white">P&L</div>
+      <span class="font-bold text-base tracking-tight hidden sm:inline">PnL Ledger <span class="text-blue-400">Pro</span></span>
+      <select id="accSelect" onchange="changeAcc()" class="inp !w-auto !py-1 font-semibold text-xs sm:text-sm"></select>
+      <button onclick="openAccModal()" class="px-2 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded border border-slate-700" title="Gestionar Cuentas">⚙️</button>
     </div>
-
-    <!-- Resumen rápido cuenta activa en el pie del sidebar -->
-    <div class="p-4 border-t border-slate-200 dark:border-zinc-800 space-y-3">
-      <div class="p-3 rounded-xl bg-slate-100/80 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/60">
-        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
-          <span>Balance Actual</span>
-          <span id="sidebarReturnBadge" class="font-mono font-semibold text-emerald-500">+0.0%</span>
-        </div>
-        <div id="sidebarBalanceValue" class="font-mono font-bold text-base mt-1 tabular-nums">$50,000.00</div>
-        <div class="mt-2 pt-2 border-t border-slate-200 dark:border-zinc-700/70 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400">
-          <span>Guardado local</span>
-          <span class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Activo
-          </span>
-        </div>
+    <div class="flex items-center gap-1.5">
+      <div class="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800 text-xs">
+        <button onclick="setUnit('$')" id="u-$" class="px-2 py-1 rounded tab-active">$/€</button>
+        <button onclick="setUnit('%')" id="u-%" class="px-2 py-1 rounded">%</button>
+        <button onclick="setUnit('R')" id="u-R" class="px-2 py-1 rounded">R</button>
       </div>
-    </div>
-  </aside>
-
-  <!-- CONTENEDOR PRINCIPAL -->
-  <div class="flex-1 flex flex-col min-w-0">
-
-    <!-- CABECERA SUPERIOR -->
-    <header class="sticky top-0 z-30 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800 px-4 lg:px-6 py-3">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <!-- Izquierda: Botón menú móvil + Selector de Cuenta -->
-        <div class="flex items-center gap-2.5 flex-wrap">
-          <button onclick="toggleMobileSidebar(true)" class="lg:hidden p-2 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900">
-            <i data-lucide="menu" class="w-5 h-5"></i>
-          </button>
-
-          <!-- Selector de cuenta activa -->
-          <div class="flex items-center gap-1.5">
-            <div class="relative">
-              <select id="accountSelector" onchange="handleAccountChange(this.value)" class="appearance-none bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl pl-3.5 pr-9 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-              </select>
-              <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"></i>
-            </div>
-            <button onclick="openAccountModal()" title="Nueva / Gestionar Cuentas" class="p-2 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-500/50 text-slate-600 dark:text-zinc-300 transition">
-              <i data-lucide="settings-2" class="w-4 h-4"></i>
-            </button>
-          </div>
-        </div>
-
-        <!-- Derecha: Unidad de visualización, Modo Privacidad, Acciones rápidas y Tema -->
-        <div class="flex items-center gap-2 flex-wrap">
-          <!-- Selector Modo de Visualización ($/€, %, R) -->
-          <div class="inline-flex rounded-xl bg-slate-100 dark:bg-zinc-900 p-1 border border-slate-200 dark:border-zinc-800 text-xs font-semibold">
-            <button onclick="setDisplayMode('currency')" id="modeBtn_currency" class="px-2.5 py-1 rounded-lg transition">$/€</button>
-            <button onclick="setDisplayMode('percent')" id="modeBtn_percent" class="px-2.5 py-1 rounded-lg transition">%</button>
-            <button onclick="setDisplayMode('rmultiple')" id="modeBtn_rmultiple" class="px-2.5 py-1 rounded-lg transition">R</button>
-          </div>
-
-          <!-- Modo Privacidad (Ojo) -->
-          <button onclick="togglePrivacyMode()" id="privacyBtn" title="Modo Privacidad (Ocultar importes monetarios)" class="p-2 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-500/50 transition">
-            <i id="privacyIcon" data-lucide="eye" class="w-4 h-4"></i>
-          </button>
-
-          <!-- Botón Filtros Globales -->
-          <button onclick="toggleFilterBar()" id="filterToggleBtn" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-500/50 text-xs font-semibold flex items-center gap-1.5 transition">
-            <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
-            <span class="hidden sm:inline">Filtros</span>
-            <span id="activeFilterBadge" class="hidden px-1.5 py-0.2 rounded-full bg-indigo-600 text-white text-[10px]">0</span>
-          </button>
-
-          <!-- Botón Limpiar / Demo rápido -->
-          <button onclick="confirmCleanAccount()" title="Vaciar datos de prueba / Nueva cuenta limpia" class="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-semibold transition">
-            <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
-            <span>Cuenta Limpia</span>
-          </button>
-
-          <!-- Tema Oscuro / Claro -->
-          <button onclick="toggleTheme()" title="Alternar tema oscuro / claro" class="p-2 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-500/50 transition">
-            <i id="themeIcon" data-lucide="sun" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- BARRA DESPLEGABLE DE FILTROS GLOBALES -->
-      <div id="globalFilterBar" class="hidden mt-3 pt-3 border-t border-slate-200 dark:border-zinc-800 fade-in">
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
-          <div>
-            <label class="block text-[11px] font-medium text-slate-500 dark:text-zinc-400 mb-1">Desde</label>
-            <input type="date" id="filterDateFrom" onchange="applyGlobalFilters()" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-medium text-slate-500 dark:text-zinc-400 mb-1">Hasta</label>
-            <input type="date" id="filterDateTo" onchange="applyGlobalFilters()" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-medium text-slate-500 dark:text-zinc-400 mb-1">Activo</label>
-            <select id="filterSymbol" onchange="applyGlobalFilters()" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs">
-              <option value="ALL">Todos</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-medium text-slate-500 dark:text-zinc-400 mb-1">Dirección</label>
-            <select id="filterSide" onchange="applyGlobalFilters()" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs">
-              <option value="ALL">Long & Short</option>
-              <option value="LONG">Solo Long (Compra)</option>
-              <option value="SHORT">Solo Short (Venta)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-medium text-slate-500 dark:text-zinc-400 mb-1">Sesión</label>
-            <select id="filterSession" onchange="applyGlobalFilters()" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs">
-              <option value="ALL">Todas</option>
-              <option value="Londres">Londres</option>
-              <option value="Solapamiento LDN/NY">Solapamiento LDN/NY</option>
-              <option value="Nueva York">Nueva York</option>
-              <option value="Asia">Asia</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-medium text-slate-500 dark:text-zinc-400 mb-1">Estrategia</label>
-            <select id="filterStrategy" onchange="applyGlobalFilters()" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs">
-              <option value="ALL">Todas</option>
-            </select>
-          </div>
-          <div class="flex flex-col justify-between">
-            <label class="block text-[11px] font-medium text-slate-500 dark:text-zinc-400 mb-1">Etiqueta</label>
-            <div class="flex gap-1.5">
-              <select id="filterTag" onchange="applyGlobalFilters()" class="w-full px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs">
-                <option value="ALL">Todas</option>
-              </select>
-              <button onclick="resetGlobalFilters()" title="Limpiar filtros" class="px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-zinc-800 hover:bg-rose-500 hover:text-white text-xs transition">
-                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- CONTENIDO PRINCIPAL DE VISTAS -->
-    <main class="flex-1 p-4 lg:p-6 space-y-6 max-w-[1600px] w-full mx-auto">
-
-      <!-- ========================================== -->
-      <!-- VISTA 1: DASHBOARD PRINCIPAL               -->
-      <!-- ========================================== -->
-      <section id="view_dashboard" class="space-y-6 fade-in">
-        <!-- Estado de Reglas de Fondeo / Gestión de Riesgo -->
-        <div id="propRulesPanel" class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 lg:p-5 shadow-xs">
-          <!-- Renderizado dinámico JS -->
-        </div>
-
-        <!-- Tarjetas KPI Principales (Fila 1) -->
-        <div id="kpiPrimaryGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <!-- Renderizado dinámico JS -->
-        </div>
-
-        <!-- Panel Estadístico Secundario Completo (Fila 2) -->
-        <div id="kpiSecondaryGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <!-- Renderizado dinámico JS -->
-        </div>
-
-        <!-- Gráficos Principales: Equity Curve + Underwater Drawdown -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
-          <!-- Curva de Evolución (Neto vs Bruto) -->
-          <div class="xl:col-span-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 flex flex-col">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-              <div>
-                <h2 class="font-bold text-base flex items-center gap-2">
-                  <i data-lucide="trending-up" class="w-4 h-4 text-emerald-500"></i>
-                  Curva de Evolución (Equity Curve)
-                </h2>
-                <p class="text-xs text-slate-500 dark:text-zinc-400">Evolución acumulada P&L Neto vs. P&L Bruto (antes de comisiones/swaps)</p>
-              </div>
-              <div class="inline-flex rounded-lg bg-slate-100 dark:bg-zinc-800 p-0.5 text-xs">
-                <button onclick="setEquityAxisMode('trade')" id="eqAxis_trade" class="px-2.5 py-1 rounded-md font-medium bg-white dark:bg-zinc-700 shadow-xs">Por Trade</button>
-                <button onclick="setEquityAxisMode('date')" id="eqAxis_date" class="px-2.5 py-1 rounded-md font-medium text-slate-500 dark:text-zinc-400">Por Día</button>
-              </div>
-            </div>
-            <div class="relative h-72 w-full">
-              <canvas id="equityChart"></canvas>
-            </div>
-          </div>
-
-          <!-- Gráfico Underwater de Drawdown -->
-          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 flex flex-col">
-            <div class="mb-4">
-              <h2 class="font-bold text-base flex items-center gap-2">
-                <i data-lucide="shield-alert" class="w-4 h-4 text-rose-500"></i>
-                Drawdown (Underwater)
-              </h2>
-              <p class="text-xs text-slate-500 dark:text-zinc-400">Caída porcentual y monetaria desde el pico máximo de equidad</p>
-            </div>
-            <div class="relative h-72 w-full">
-              <canvas id="drawdownChart"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Últimas operaciones + Mejores Setups -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div class="lg:col-span-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="font-bold text-sm flex items-center gap-2">
-                <i data-lucide="history" class="w-4 h-4 text-indigo-500"></i>
-                Últimas Operaciones Registradas
-              </h3>
-              <button onclick="switchTab('trades')" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Ver todas →</button>
-            </div>
-            <div id="recentTradesContainer" class="overflow-x-auto"></div>
-          </div>
-
-          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
-            <h3 class="font-bold text-sm flex items-center gap-2 mb-4">
-              <i data-lucide="award" class="w-4 h-4 text-amber-500"></i>
-              Rachas y Extremos Operativos
-            </h3>
-            <div id="streaksSummaryContainer" class="space-y-3"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========================================== -->
-      <!-- VISTA 2: CALENDARIO P&L VISUAL             -->
-      <!-- ========================================== -->
-      <section id="view_calendar" class="hidden space-y-5 fade-in">
-        <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 lg:p-6">
-          <!-- Cabecera de Calendario -->
-          <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div class="flex items-center gap-3">
-              <button onclick="changeCalendarMonth(-1)" class="p-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition">
-                <i data-lucide="chevron-left" class="w-5 h-5"></i>
-              </button>
-              <h2 id="calendarMonthTitle" class="text-lg lg:text-xl font-bold capitalize min-w-[180px] text-center">Noviembre 2026</h2>
-              <button onclick="changeCalendarMonth(1)" class="p-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition">
-                <i data-lucide="chevron-right" class="w-5 h-5"></i>
-              </button>
-              <button onclick="goToLatestTradeMonth()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-zinc-800 hover:bg-indigo-600 hover:text-white transition">
-                Ir a Mes Activo
-              </button>
-            </div>
-
-            <!-- Resumen Mensual en la cabecera del calendario -->
-            <div id="calendarMonthStats" class="flex flex-wrap items-center gap-3"></div>
-          </div>
-
-          <!-- Grid del Calendario (7 días + Columna Resumen Semanal en escritorio) -->
-          <div class="overflow-x-auto pb-2">
-            <div class="min-w-[780px]">
-              <div class="grid grid-cols-8 gap-2 mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400 text-center">
-                <div>Lun</div>
-                <div>Mar</div>
-                <div>Mié</div>
-                <div>Jue</div>
-                <div>Vie</div>
-                <div>Sáb</div>
-                <div>Dom</div>
-                <div class="text-indigo-600 dark:text-indigo-400">Resumen Semanal</div>
-              </div>
-              <div id="calendarGrid" class="space-y-2">
-                <!-- Filas semanales generadas dinámicamente -->
-              </div>
-            </div>
-          </div>
-          <p class="text-xs text-slate-500 dark:text-zinc-400 mt-4 flex items-center gap-1.5">
-            <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-500"></i>
-            Haz clic en cualquier día del calendario para abrir el detalle de operaciones, registrar notas psicológicas/disciplina del día o añadir un trade en esa fecha.
-          </p>
-        </div>
-      </section>
-
-      <!-- ========================================== -->
-      <!-- VISTA 3: BITÁCORA QUIRÚRGICA DE TRADES     -->
-      <!-- ========================================== -->
-      <section id="view_trades" class="hidden space-y-4 fade-in">
-        <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 lg:p-5">
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div class="relative flex-1 min-w-[240px] max-w-md">
-              <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="text" id="tradeSearchInput" oninput="renderTradesTable()" placeholder="Buscar por activo, estrategia, etiquetas o notas..." class="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2">
-              <button onclick="exportTradesCSV()" class="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-semibold flex items-center gap-1.5 transition">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar CSV
-              </button>
-              <label class="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition">
-                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Importar CSV
-                <input type="file" accept=".csv" onchange="importTradesCSV(event)" class="hidden" />
-              </label>
-              <button onclick="openTradeModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-indigo-600/20 transition">
-                <i data-lucide="plus" class="w-4 h-4"></i> Nueva Operación
-              </button>
-            </div>
-          </div>
-
-          <!-- Tabla Responsiva -->
-          <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-800">
-            <table class="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr class="bg-slate-100/90 dark:bg-zinc-800/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 border-b border-slate-200 dark:border-zinc-800">
-                  <th onclick="sortTradesBy('entryTime')" class="py-3 px-3 cursor-pointer hover:text-indigo-500">Fecha / Duración ↕</th>
-                  <th onclick="sortTradesBy('symbol')" class="py-3 px-3 cursor-pointer hover:text-indigo-500">Activo ↕</th>
-                  <th onclick="sortTradesBy('side')" class="py-3 px-3 cursor-pointer hover:text-indigo-500">Lado / Lotes</th>
-                  <th class="py-3 px-3">Entrada → Salida</th>
-                  <th onclick="sortTradesBy('strategy')" class="py-3 px-3 cursor-pointer hover:text-indigo-500">Setup & Sesión ↕</th>
-                  <th class="py-3 px-3">Etiquetas / Rating</th>
-                  <th onclick="sortTradesBy('rMultiple')" class="py-3 px-3 text-right cursor-pointer hover:text-indigo-500">Múltiplo R ↕</th>
-                  <th onclick="sortTradesBy('netPnl')" class="py-3 px-3 text-right cursor-pointer hover:text-indigo-500">P&L Neto ↕</th>
-                  <th class="py-3 px-3 text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="tradesTableBody" class="divide-y divide-slate-200 dark:divide-zinc-800/80">
-                <!-- Filas dinámicas -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========================================== -->
-      <!-- VISTA 4: ANALÍTICA AVANZADA & MAE/MFE      -->
-      <!-- ========================================== -->
-      <section id="view_analytics" class="hidden space-y-6 fade-in">
-        <!-- Fila 1: Día de la Semana + Sesión Operativa -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
-            <h3 class="font-bold text-base mb-1 flex items-center gap-2">
-              <i data-lucide="calendar-range" class="w-4 h-4 text-indigo-500"></i>
-              Rendimiento por Día de la Semana
-            </h3>
-            <p class="text-xs text-slate-500 dark:text-zinc-400 mb-4">P&L Neto acumulado de Lunes a Viernes</p>
-            <div class="relative h-64"><canvas id="weekdayChart"></canvas></div>
-          </div>
-
-          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
-            <h3 class="font-bold text-base mb-1 flex items-center gap-2">
-              <i data-lucide="globe" class="w-4 h-4 text-sky-500"></i>
-              Rendimiento por Sesión Operativa
-            </h3>
-            <p class="text-xs text-slate-500 dark:text-zinc-400 mb-4">Comparativa Asia, Londres, Solapamiento LDN/NY y Nueva York</p>
-            <div class="relative h-64"><canvas id="sessionChart"></canvas></div>
-          </div>
-        </div>
-
-        <!-- Fila 2: Por Activo + Por Estrategia -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
-            <h3 class="font-bold text-base mb-1 flex items-center gap-2">
-              <i data-lucide="coins" class="w-4 h-4 text-amber-500"></i>
-              Rendimiento por Activo / Símbolo
-            </h3>
-            <p class="text-xs text-slate-500 dark:text-zinc-400 mb-4">Identifica qué instrumentos aportan mayor ventaja estadística</p>
-            <div class="relative h-64"><canvas id="symbolChart"></canvas></div>
-          </div>
-
-          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
-            <h3 class="font-bold text-base mb-1 flex items-center gap-2">
-              <i data-lucide="compass" class="w-4 h-4 text-emerald-500"></i>
-              Rendimiento por Estrategia / Setup
-            </h3>
-            <p class="text-xs text-slate-500 dark:text-zinc-400 mb-4">Beneficio neto generado por cada modelo de entrada</p>
-            <div class="relative h-64"><canvas id="strategyChart"></canvas></div>
-          </div>
-        </div>
-
-        <!-- Fila 3: Dispersión MAE vs MFE + Tabla de Impacto de Etiquetas -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
-          <div class="xl:col-span-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
-            <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
-              <div>
-                <h3 class="font-bold text-base flex items-center gap-2">
-                  <i data-lucide="scatter-chart" class="w-4 h-4 text-purple-500"></i>
-                  Análisis Institucional MAE vs. MFE
-                </h3>
-                <p class="text-xs text-slate-500 dark:text-zinc-400">Excursión Máxima Adversa (eje X, dolor soportado) vs. Excursión Máxima Favorable (eje Y, potencial alcanzado)</p>
-              </div>
-              <span id="maeMfeInsightBadge" class="text-xs px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium"></span>
-            </div>
-            <div class="relative h-80"><canvas id="maeMfeChart"></canvas></div>
-          </div>
-
-          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 flex flex-col">
-            <h3 class="font-bold text-base mb-1 flex items-center gap-2">
-              <i data-lucide="tags" class="w-4 h-4 text-rose-500"></i>
-              Auditoría por Etiquetas y Errores
-            </h3>
-            <p class="text-xs text-slate-500 dark:text-zinc-400 mb-4">Coste real de tus errores y valor de seguir el plan</p>
-            <div id="tagAuditList" class="space-y-2.5 overflow-y-auto max-h-80 pr-1"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========================================== -->
-      <!-- VISTA 5: SIMULADOR "¿QUÉ PASARÍA SI...?"   -->
-      <!-- ========================================== -->
-      <section id="view_whatif" class="hidden space-y-6 fade-in">
-        <div class="bg-gradient-to-r from-indigo-600/10 via-purple-600/5 to-emerald-600/10 border border-indigo-500/25 rounded-2xl p-5">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 class="text-lg font-bold flex items-center gap-2">
-                <i data-lucide="sparkles" class="w-5 h-5 text-indigo-500"></i>
-                Simulador Cuantitativo "¿Qué pasaría si...?" (What-If Analyzer)
-              </h2>
-              <p class="text-xs text-slate-600 dark:text-zinc-400 mt-0.5">Excluye errores emocionales, días, sesiones o limita tus pérdidas máximas para proyectar tu curva potencial al instante.</p>
-            </div>
-            <button onclick="resetWhatIf()" class="px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-semibold hover:border-indigo-500 transition">
-              Restablecer Simulación
-            </button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <!-- Controles del Simulador -->
-          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 space-y-5">
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">1. Eliminar Errores / Etiquetas</label>
-              <div id="whatIfTagsContainer" class="flex flex-wrap gap-1.5"></div>
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">2. Excluir Días de la Semana</label>
-              <div id="whatIfDaysContainer" class="flex flex-wrap gap-1.5"></div>
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">3. Excluir Sesiones</label>
-              <div id="whatIfSessionsContainer" class="flex flex-wrap gap-1.5"></div>
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">4. Excluir Activos</label>
-              <div id="whatIfSymbolsContainer" class="flex flex-wrap gap-1.5"></div>
-            </div>
-
-            <div class="pt-3 border-t border-slate-200 dark:border-zinc-800 space-y-3">
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">5. Reglas de Gestión de Riesgo</label>
-              <label class="flex items-center justify-between gap-2 text-sm cursor-pointer">
-                <span>Limitar pérdida máx. a <strong class="font-mono text-rose-500">-1.0R</strong> por trade</span>
-                <input type="checkbox" id="whatIfCap1R" onchange="renderWhatIfView()" class="w-4 h-4 accent-indigo-600 rounded" />
-              </label>
-              <div>
-                <div class="flex justify-between text-xs mb-1">
-                  <span>Tope de pérdida monetaria por trade (0 = sin tope)</span>
-                  <span id="whatIfMaxLossLabel" class="font-mono font-bold">Sin tope</span>
-                </div>
-                <input type="range" id="whatIfMaxLossSlider" min="0" max="1000" step="50" value="0" oninput="renderWhatIfView()" class="w-full accent-indigo-600" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Comparativa KPIs + Curva Real vs Simulada -->
-          <div class="xl:col-span-2 space-y-5">
-            <div id="whatIfComparisonCards" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
-
-            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
-              <div class="flex items-center justify-between mb-4">
-                <div>
-                  <h3 class="font-bold text-base">Curva Real vs. Curva Simulada</h3>
-                  <p class="text-xs text-slate-500 dark:text-zinc-400">Impacto acumulado aplicando las reglas seleccionadas</p>
-                </div>
-                <span id="whatIfRemovedCount" class="text-xs font-mono px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800"></span>
-              </div>
-              <div class="relative h-80"><canvas id="whatIfChart"></canvas></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========================================== -->
-      <!-- VISTA 6: CUENTAS, REGLAS Y COPIAS DE SEG.  -->
-      <!-- ========================================== -->
-      <section id="view_accounts" class="hidden space-y-6 fade-in">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="text-xl font-bold">Gestión Multicuenta & Copias de Seguridad</h2>
-            <p class="text-xs text-slate-500 dark:text-zinc-400">Configura cuentas de fondeo (Prop Firms), cuentas reales o entornos de Backtesting.</p>
-          </div>
-          <button onclick="openAccountModal()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-indigo-600/20">
-            <i data-lucide="plus" class="w-4 h-4"></i> Añadir Nueva Cuenta
-          </button>
-        </div>
-
-        <div id="accountsCardsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
-
-        <!-- Panel de Datos, Backup JSON y Demo -->
-        <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 space-y-4">
-          <h3 class="font-bold text-base flex items-center gap-2">
-            <i data-lucide="database-backup" class="w-5 h-5 text-indigo-500"></i>
-            Portabilidad, Backup Completo y Gestión de Datos Demo
-          </h3>
-          <p class="text-xs text-slate-500 dark:text-zinc-400">Todos tus datos se guardan automáticamente en este navegador (`localStorage`). Te recomendamos descargar periódicamente una copia JSON si operas desde distintos dispositivos.</p>
-
-          <div class="flex flex-wrap gap-3 pt-2">
-            <button onclick="exportFullBackupJSON()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-2 transition">
-              <i data-lucide="download-cloud" class="w-4 h-4"></i> Exportar Backup Completo (JSON)
-            </button>
-
-            <label class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-semibold flex items-center gap-2 cursor-pointer transition">
-              <i data-lucide="upload-cloud" class="w-4 h-4"></i> Importar Backup (JSON)
-              <input type="file" accept=".json" onchange="importFullBackupJSON(event)" class="hidden" />
-            </label>
-
-            <button onclick="confirmCleanAccount()" class="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/25 text-xs font-semibold flex items-center gap-2 transition">
-              <i data-lucide="trash-2" class="w-4 h-4"></i> Vaciar Datos / Cuenta Limpia
-            </button>
-
-            <button onclick="confirmRestoreDemo()" class="px-4 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-xs font-semibold flex items-center gap-2 transition">
-              <i data-lucide="refresh-cw" class="w-4 h-4"></i> Restaurar Datos Demo (~20 Trades)
-            </button>
-          </div>
-        </div>
-      </section>
-
-    </main>
-  </div>
-
-  <!-- ========================================================= -->
-  <!-- MODAL 1: AÑADIR / EDITAR OPERACIÓN QUIRÚRGICA             -->
-  <!-- ========================================================= -->
-  <div id="tradeModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs hidden items-center justify-center p-3 sm:p-5 overflow-y-auto">
-    <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl fade-in">
-      <!-- Cabecera Modal -->
-      <div class="px-6 py-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-indigo-500/15 text-indigo-500 flex items-center justify-center">
-            <i data-lucide="file-pen-line" class="w-4 h-4"></i>
-          </div>
-          <h3 id="tradeModalTitle" class="font-bold text-base">Registrar Operación</h3>
-        </div>
-        <button onclick="closeTradeModal()" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <!-- Cuerpo del Formulario -->
-      <form id="tradeForm" onsubmit="saveTradeForm(event)" class="p-6 overflow-y-auto space-y-6 text-sm">
-        <input type="hidden" id="tf_id" />
-
-        <!-- Bloque 1: Tiempo, Activo, Dirección y Lotes -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Entrada (Fecha y Hora) *</label>
-            <input type="datetime-local" id="tf_entryTime" required onchange="updateCalculatedFieldsInModal()" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Salida (Fecha y Hora) *</label>
-            <input type="datetime-local" id="tf_exitTime" required onchange="updateCalculatedFieldsInModal()" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Activo / Símbolo *</label>
-            <input type="text" id="tf_symbol" list="symbolSuggestions" required placeholder="Ej: XAU/USD, MNQ..." class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono uppercase font-semibold" />
-            <datalist id="symbolSuggestions">
-              <option value="XAU/USD"></option>
-              <option value="MNQ"></option>
-              <option value="MES"></option>
-              <option value="NQ"></option>
-              <option value="EUR/USD"></option>
-              <option value="GBP/USD"></option>
-              <option value="GBP/JPY"></option>
-              <option value="BTC/USD"></option>
-              <option value="US30"></option>
-            </datalist>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Dirección & Tamaño *</label>
-            <div class="flex gap-2">
-              <select id="tf_side" onchange="updateCalculatedFieldsInModal()" class="w-1/2 px-2.5 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-bold text-xs">
-                <option value="LONG">LONG ▲</option>
-                <option value="SHORT">SHORT ▼</option>
-              </select>
-              <input type="number" step="0.01" min="0.01" id="tf_size" required placeholder="Lotes/Cont." value="1" class="w-1/2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Bloque 2: Precios Técnicos -->
-        <div class="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Niveles de Ejecución y Riesgo</span>
-            <div class="flex items-center gap-3 text-xs">
-              <span id="tf_durationBadge" class="font-mono text-slate-500 dark:text-zinc-400">Duración: —</span>
-              <button type="button" onclick="autoEstimatePnlFromPrices()" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/25 font-semibold transition">
-                ⚡ Sugerir P&L desde precios
-              </button>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <label class="block text-[11px] text-slate-500 dark:text-zinc-400 mb-1">Precio Entrada</label>
-              <input type="number" step="any" id="tf_entryPrice" oninput="updateCalculatedFieldsInModal()" placeholder="0.00" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-            </div>
-            <div>
-              <label class="block text-[11px] text-slate-500 dark:text-zinc-400 mb-1">Precio Salida</label>
-              <input type="number" step="any" id="tf_exitPrice" oninput="updateCalculatedFieldsInModal()" placeholder="0.00" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-            </div>
-            <div>
-              <label class="block text-[11px] text-slate-500 dark:text-zinc-400 mb-1">Stop Loss Inicial</label>
-              <input type="number" step="any" id="tf_stopLoss" oninput="updateCalculatedFieldsInModal()" placeholder="0.00" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-            </div>
-            <div>
-              <label class="block text-[11px] text-slate-500 dark:text-zinc-400 mb-1">Take Profit Objetivo</label>
-              <input type="number" step="any" id="tf_takeProfit" oninput="updateCalculatedFieldsInModal()" placeholder="0.00" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Bloque 3: Resultado Monetario, Riesgo 1R y MAE / MFE -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1">P&L Bruto ($/€) *</label>
-            <input type="number" step="0.01" id="tf_grossPnl" required oninput="syncPnlFields('gross')" placeholder="0.00" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-xs font-bold" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1">Comisión + Swap</label>
-            <input type="number" step="0.01" min="0" id="tf_commission" value="0" oninput="syncPnlFields('comm')" placeholder="0.00" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-1">P&L Neto Final *</label>
-            <input type="number" step="0.01" id="tf_netPnl" required oninput="syncPnlFields('net')" placeholder="0.00" class="w-full px-3 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/40 font-mono text-xs font-bold" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1">Riesgo 1R ($/€)</label>
-            <input type="number" step="0.01" min="1" id="tf_riskAmount" value="250" oninput="updateCalculatedFieldsInModal()" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-            <span id="tf_rMultiplePreview" class="block text-[10px] font-mono text-indigo-500 mt-0.5">Resultado: 0.00R</span>
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-rose-500 mb-1" title="Excursión Máxima Adversa (máximo flotante en negativo)">MAE ($ en contra)</label>
-            <input type="number" step="0.01" min="0" id="tf_mae" value="0" placeholder="Ej: 120" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-emerald-500 mb-1" title="Excursión Máxima Favorable (máximo flotante en positivo)">MFE ($ a favor)</label>
-            <input type="number" step="0.01" min="0" id="tf_mfe" value="0" placeholder="Ej: 640" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-          </div>
-        </div>
-
-        <!-- Bloque 4: Sesión, Estrategia y Valoración -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Sesión Operativa</label>
-            <select id="tf_session" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs font-medium">
-              <option value="Londres">Londres</option>
-              <option value="Solapamiento LDN/NY">Solapamiento LDN/NY</option>
-              <option value="Nueva York">Nueva York</option>
-              <option value="Asia">Asia</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Estrategia / Setup</label>
-            <div class="flex gap-1.5">
-              <select id="tf_strategy" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs font-medium"></select>
-              <button type="button" onclick="promptAddCustomStrategy()" title="Nueva Estrategia" class="px-2.5 rounded-xl bg-slate-200 dark:bg-zinc-800 hover:bg-indigo-600 hover:text-white text-xs font-bold">+</button>
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Calidad de Ejecución</label>
-            <div id="tf_ratingStars" class="flex items-center gap-1.5 py-1.5"></div>
-          </div>
-        </div>
-
-        <!-- Nueva Estrategia inline oculta -->
-        <div id="newStrategyInline" class="hidden p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center gap-2">
-          <input type="text" id="newStrategyInput" placeholder="Nombre del nuevo setup (ej: Order Block M15)..." class="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs" />
-          <button type="button" onclick="confirmAddCustomStrategy()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Añadir</button>
-        </div>
-
-        <!-- Bloque 5: Etiquetas de Ejecución / Errores + Checklist -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div class="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800">
-            <div class="flex items-center justify-between mb-2">
-              <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Etiquetas de Ejecución / Errores</label>
-              <button type="button" onclick="toggleNewTagInline()" class="text-xs text-indigo-500 font-semibold hover:underline">+ Crear etiqueta</button>
-            </div>
-            <div id="newTagInline" class="hidden mb-2 flex gap-1.5">
-              <input type="text" id="newTagInput" placeholder="Ej: Salida parcial..." class="flex-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs" />
-              <button type="button" onclick="confirmAddCustomTag()" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs font-semibold">OK</button>
-            </div>
-            <div id="tf_tagsPills" class="flex flex-wrap gap-1.5"></div>
-          </div>
-
-          <div class="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800">
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Checklist del Plan de Trading</label>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="chk_htf" class="accent-indigo-600 rounded" /> Contexto HTF a favor</label>
-              <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="chk_risk" class="accent-indigo-600 rounded" /> Riesgo % dentro de regla</label>
-              <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="chk_poi" class="accent-indigo-600 rounded" /> Confirmación en zona clave</label>
-              <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="chk_news" class="accent-indigo-600 rounded" /> Libre de noticias rojas</label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bloque 6: Notas y Captura de Pantalla -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Notas Operativas y Psicología</label>
-            <textarea id="tf_notes" rows="4" placeholder="Motivo de entrada, gestión durante el trade, emociones sentidas..." class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs resize-none"></textarea>
-          </div>
-          <div class="space-y-2">
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400">Captura del Gráfico (URL TradingView o Subir Imagen)</label>
-            <input type="text" id="tf_screenshotUrl" oninput="updateScreenshotPreview(this.value)" placeholder="https://www.tradingview.com/x/... o sube archivo abajo" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs" />
-            <div class="flex items-center justify-between gap-2">
-              <label class="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-zinc-800 hover:bg-slate-300 dark:hover:bg-zinc-700 text-xs font-medium cursor-pointer flex items-center gap-1.5">
-                <i data-lucide="image-plus" class="w-3.5 h-3.5"></i> Subir captura local
-                <input type="file" accept="image/*" onchange="handleScreenshotUpload(event)" class="hidden" />
-              </label>
-              <button type="button" onclick="clearScreenshotInModal()" class="text-xs text-rose-500 hover:underline">Quitar imagen</button>
-            </div>
-            <div id="tf_screenshotPreviewWrap" class="hidden relative rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700 h-24 bg-black/20">
-              <img id="tf_screenshotPreview" src="" alt="Preview captura" class="w-full h-full object-cover cursor-zoom-in" onclick="openLightbox(this.src)" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Botones Guardar / Cancelar -->
-        <div class="pt-4 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-end gap-3">
-          <button type="button" onclick="closeTradeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-semibold">
-            Cancelar
-          </button>
-          <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/25 flex items-center gap-2">
-            <i data-lucide="check" class="w-4 h-4"></i> Guardar Operación
-          </button>
-        </div>
-      </form>
+      <button onclick="togglePriv()" id="privBtn" class="px-2.5 py-1.5 text-xs bg-slate-800 rounded-lg border border-slate-700">👁️</button>
+      <button onclick="openTradeModal()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg">+ Trade</button>
     </div>
   </div>
+</header>
 
-  <!-- ========================================================= -->
-  <!-- MODAL 2: DETALLE DE DÍA DEL CALENDARIO Y DIARIO DIARIO    -->
-  <!-- ========================================================= -->
-  <div id="dayModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs hidden items-center justify-center p-3 sm:p-5 overflow-y-auto">
-    <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl fade-in">
-      <div class="px-6 py-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between">
-        <div>
-          <h3 id="dayModalTitle" class="font-bold text-base">Resumen de Sesión</h3>
-          <p id="dayModalSubtitle" class="text-xs text-slate-500 dark:text-zinc-400"></p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="dayModalAddTradeBtn" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Añadir Trade
-          </button>
-          <button onclick="closeDayModal()" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400">
-            <i data-lucide="x" class="w-5 h-5"></i>
-          </button>
-        </div>
+<!-- NAV TABS -->
+<nav class="max-w-7xl mx-auto px-3 pt-3 flex gap-1.5 overflow-x-auto pb-1 text-xs sm:text-sm font-medium">
+  <button onclick="showTab('dash')" id="t-dash" class="px-3 py-1.5 rounded-lg tab-active whitespace-nowrap">📊 Dashboard</button>
+  <button onclick="showTab('cal')" id="t-cal" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">📅 Calendario</button>
+  <button onclick="showTab('trades')" id="t-trades" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">📝 Operaciones</button>
+  <button onclick="showTab('analytics')" id="t-analytics" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">🔬 MAE/MFE & Sesiones</button>
+  <button onclick="showTab('sim')" id="t-sim" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">⚡ Simulador What-If</button>
+  <button onclick="exportData()" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap ml-auto">💾 Exportar</button>
+  <label class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap cursor-pointer">📂 Importar<input type="file" accept=".json" onchange="importData(event)" class="hidden"></label>
+</nav>
+
+<main class="max-w-7xl mx-auto p-3 space-y-4">
+
+  <!-- REGLAS DE FONDEO / OBJETIVOS -->
+  <section id="propRules" class="card p-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs"></section>
+
+  <!-- TAB 1: DASHBOARD -->
+  <section id="v-dash" class="space-y-4">
+    <div id="kpiGrid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2.5"></div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="card p-3 lg:col-span-2">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase mb-2">Curva de Evolución (Equidad Neta)</h3>
+        <div class="h-64"><canvas id="eqChart"></canvas></div>
       </div>
-
-      <div class="p-6 overflow-y-auto space-y-5">
-        <!-- Lista de operaciones del día -->
-        <div>
-          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2.5">Operaciones Ejecutadas</h4>
-          <div id="dayModalTradesList" class="space-y-2"></div>
-        </div>
-
-        <!-- Diario Psicológico y Lecciones del Día -->
-        <div class="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 space-y-3">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1.5">
-            <i data-lucide="book-open-check" class="w-4 h-4"></i> Diario de Sesión & Estado Emocional
-          </h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs text-slate-500 dark:text-zinc-400 mb-1">Estado Emocional Predominante</label>
-              <select id="dj_mood" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-medium">
-                <option value="Enfocado y Calmado">🧘‍♂️ Enfocado y Calmado</option>
-                <option value="Confiado / En Zona">🔥 Confiado / En Zona</option>
-                <option value="Ansioso / Impaciente">⚡ Ansioso / Impaciente</option>
-                <option value="Frustrado / Revenge">😡 Frustrado / Riesgo Revenge</option>
-                <option value="Cansado / Baja Energía">😴 Cansado / Baja Energía</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs text-slate-500 dark:text-zinc-400 mb-1">Disciplina Global del Día (1 - 10)</label>
-              <input type="number" min="1" max="10" id="dj_discipline" value="8" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-zinc-400 mb-1">Notas de la Jornada y Lecciones Aprendidas</label>
-            <textarea id="dj_notes" rows="3" placeholder="¿Respetaste tu límite diario? ¿Qué hiciste bien hoy y qué debes corregir mañana?" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs resize-none"></textarea>
-          </div>
-          <div class="flex justify-end">
-            <button onclick="saveDailyJournal()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5">
-              <i data-lucide="save" class="w-3.5 h-3.5"></i> Guardar Notas del Día
-            </button>
-          </div>
-        </div>
+      <div class="card p-3">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase mb-2">Drawdown Histórico</h3>
+        <div class="h-64"><canvas id="ddChart"></canvas></div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ========================================================= -->
-  <!-- MODAL 3: CREAR / EDITAR CUENTA (FONDEO / REAL / BACKTEST) -->
-  <!-- ========================================================= -->
-  <div id="accountModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs hidden items-center justify-center p-4">
-    <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl fade-in">
-      <div class="px-6 py-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between">
-        <h3 id="accountModalTitle" class="font-bold text-base">Configurar Cuenta de Trading</h3>
-        <button onclick="closeAccountModal()" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <form onsubmit="saveAccountForm(event)" class="p-6 space-y-4 text-sm">
-        <input type="hidden" id="af_id" />
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Nombre de la Cuenta *</label>
-            <input type="text" id="af_name" required placeholder="Ej: Fondeo Apex $50k EOD" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs font-semibold" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Tipo</label>
-            <select id="af_type" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs">
-              <option value="Fondeo">Prop Firm / Fondeo</option>
-              <option value="Real">Cuenta Real</option>
-              <option value="Backtesting">Backtesting / Demo</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Balance Inicial *</label>
-            <input type="number" step="1" min="100" id="af_balance" required value="50000" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1">Divisa</label>
-            <select id="af_currency" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-xs">
-              <option value="$">USD ($)</option>
-              <option value="€">EUR (€)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 space-y-3">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Reglas y Objetivos de Riesgo</p>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label class="block text-[11px] text-emerald-500 font-semibold mb-1">Profit Target</label>
-              <input type="number" step="1" min="0" id="af_target" value="3000" class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-            </div>
-            <div>
-              <label class="block text-[11px] text-amber-500 font-semibold mb-1">Max Pérdida Diaria</label>
-              <input type="number" step="1" min="0" id="af_dailyLoss" value="1250" class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-            </div>
-            <div>
-              <label class="block text-[11px] text-rose-500 font-semibold mb-1">Max Drawdown Total</label>
-              <input type="number" step="1" min="0" id="af_maxDd" value="2500" class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-xs" />
-            </div>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="closeAccountModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs font-semibold">Cancelar</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold">Guardar Cuenta</button>
-        </div>
-      </form>
+  <!-- TAB 2: CALENDARIO -->
+  <section id="v-cal" class="hidden space-y-3">
+    <div class="card p-3 flex items-center justify-between">
+      <button onclick="moveMonth(-1)" class="px-3 py-1 bg-slate-800 rounded">◀</button>
+      <h2 id="calTitle" class="font-bold text-base sm:text-lg capitalize"></h2>
+      <button onclick="moveMonth(1)" class="px-3 py-1 bg-slate-800 rounded">▶</button>
     </div>
-  </div>
-
-  <!-- MODAL LIGHTBOX PARA CAPTURAS DE PANTALLA -->
-  <div id="lightboxModal" onclick="closeLightbox()" class="fixed inset-0 z-[60] bg-black/90 hidden items-center justify-center p-4 cursor-zoom-out">
-    <img id="lightboxImg" src="" alt="Captura ampliada" class="max-w-full max-h-[92vh] rounded-xl shadow-2xl border border-zinc-700" />
-  </div>
-
-  <!-- MODAL DE CONFIRMACIÓN PERSONALIZADO (SIN confirm() NATIVO) -->
-  <div id="confirmModal" class="fixed inset-0 z-[70] bg-black/70 backdrop-blur-xs hidden items-center justify-center p-4">
-    <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 fade-in">
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center shrink-0">
-          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
+      <div class="card p-2 sm:p-3 lg:col-span-3">
+        <div class="grid grid-cols-7 gap-1 text-center text-[11px] text-slate-400 font-semibold mb-1">
+          <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
         </div>
-        <div>
-          <h4 id="confirmTitle" class="font-bold text-base">Confirmar acción</h4>
-          <p id="confirmMessage" class="text-xs text-slate-500 dark:text-zinc-400 mt-1"></p>
-        </div>
+        <div id="calGrid" class="grid grid-cols-7 gap-1"></div>
       </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs font-semibold">Cancelar</button>
-        <button id="confirmActionBtn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold">Confirmar</button>
+      <div class="card p-3 space-y-2">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase">Resumen Semanal</h3>
+        <div id="weekSummary" class="space-y-2 text-xs"></div>
       </div>
     </div>
+  </section>
+
+  <!-- TAB 3: OPERACIONES -->
+  <section id="v-trades" class="hidden space-y-3">
+    <div class="card p-3 flex flex-wrap gap-2 items-center text-xs">
+      <input id="fSym" oninput="renderAll()" placeholder="Filtrar activo (XAUUSD, MNQ...)" class="inp !w-44">
+      <select id="fSide" onchange="renderAll()" class="inp !w-32"><option value="">Todos L/S</option><option value="LONG">Long (Compra)</option><option value="SHORT">Short (Venta)</option></select>
+      <select id="fSetup" onchange="renderAll()" class="inp !w-40"><option value="">Todas Estrategias</option></select>
+    </div>
+    <div class="card overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-900/80 text-slate-400 uppercase text-[11px]">
+          <tr>
+            <th class="p-2.5">Fecha / Sesión</th><th class="p-2.5">Activo</th><th class="p-2.5">Tipo</th>
+            <th class="p-2.5">Lote/Cont</th><th class="p-2.5">Entrada → Salida</th><th class="p-2.5">Riesgo</th>
+            <th class="p-2.5">Estrategia / Error</th><th class="p-2.5 text-right">P&L Neto</th><th class="p-2.5 text-center">Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tradeTbody" class="divide-y divide-slate-800"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TAB 4: ANALYTICS MAE/MFE -->
+  <section id="v-analytics" class="hidden space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="card p-3"><h3 class="text-xs font-semibold text-slate-400 uppercase mb-2">P&L por Sesión Operativa</h3><div class="h-56"><canvas id="sesChart"></canvas></div></div>
+      <div class="card p-3"><h3 class="text-xs font-semibold text-slate-400 uppercase mb-2">P&L por Estrategia (Setup)</h3><div class="h-56"><canvas id="setupChart"></canvas></div></div>
+      <div class="card p-3"><h3 class="text-xs font-semibold text-slate-400 uppercase mb-2">MAE vs P&L (Excursión Adversa)</h3><div class="h-56"><canvas id="maeChart"></canvas></div></div>
+      <div class="card p-3"><h3 class="text-xs font-semibold text-slate-400 uppercase mb-2">MFE vs P&L (Beneficio Máx Flotante)</h3><div class="h-56"><canvas id="mfeChart"></canvas></div></div>
+    </div>
+  </section>
+
+  <!-- TAB 5: SIMULADOR WHAT-IF -->
+  <section id="v-sim" class="hidden space-y-4">
+    <div class="card p-4 space-y-3">
+      <h3 class="font-bold text-sm text-blue-400">⚡ Simulador de Escenarios (¿Qué pasaría si...?)</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+        <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded border border-slate-800"><input type="checkbox" id="simNoErr" onchange="renderSim()"> Excluir trades con Errores</label>
+        <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded border border-slate-800"><input type="checkbox" id="simNoFri" onchange="renderSim()"> No operar los Viernes</label>
+        <div><span class="text-slate-400 block mb-1">Filtrar Sesión:</span><select id="simSes" onchange="renderSim()" class="inp"><option value="">Todas</option><option>Londres</option><option>Nueva York</option><option>Asia</option></select></div>
+        <div><span class="text-slate-400 block mb-1">Tope Pérdida por Trade ($):</span><input type="number" id="simCap" oninput="renderSim()" placeholder="Ej: 150" class="inp"></div>
+      </div>
+      <div id="simStats" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2"></div>
+      <div class="h-64 pt-2"><canvas id="simChart"></canvas></div>
+    </div>
+  </section>
+</main>
+
+<!-- MODAL NUEVO / EDITAR TRADE -->
+<div id="tradeModal" class="fixed inset-0 z-50 hidden bg-black/75 flex items-center justify-center p-2 overflow-y-auto">
+  <div class="card w-full max-w-xl p-4 space-y-3 my-auto max-h-[92vh] overflow-y-auto">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+      <h3 id="tmTitle" class="font-bold text-base">Registrar Operación</h3>
+      <button onclick="closeModal('tradeModal')" class="text-slate-400 text-lg">✕</button>
+    </div>
+    <input type="hidden" id="tId">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+      <div><label class="text-slate-400">Fecha y Hora</label><input type="datetime-local" id="tDate" class="inp"></div>
+      <div><label class="text-slate-400">Activo</label><input id="tSym" placeholder="XAUUSD, MNQ, EURUSD" class="inp uppercase"></div>
+      <div><label class="text-slate-400">Dirección</label><select id="tSide" class="inp"><option value="LONG">LONG (Compra)</option><option value="SHORT">SHORT (Venta)</option></select></div>
+      <div><label class="text-slate-400">Lotes / Contratos</label><input type="number" step="any" id="tSize" value="1" class="inp"></div>
+      <div><label class="text-slate-400">Precio Entrada</label><input type="number" step="any" id="tEntry" class="inp"></div>
+      <div><label class="text-slate-400">Precio Salida</label><input type="number" step="any" id="tExit" class="inp"></div>
+      <div><label class="text-slate-400">P&L Bruto ($/€)</label><input type="number" step="any" id="tGross" class="inp font-bold"></div>
+      <div><label class="text-slate-400">Comisiones / Swap</label><input type="number" step="any" id="tFee" value="0" class="inp"></div>
+      <div><label class="text-slate-400">Riesgo Inicial 1R ($)</label><input type="number" step="any" id="tRisk" value="100" class="inp"></div>
+      <div><label class="text-slate-400">Sesión</label><select id="tSes" class="inp"><option>Londres</option><option>Nueva York</option><option>Asia</option></select></div>
+      <div><label class="text-slate-400">Estrategia (Setup)</label><input id="tSetup" placeholder="EMA 50/200, SMC..." class="inp"></div>
+      <div><label class="text-slate-400">Etiqueta Error (opcional)</label><input id="tErr" placeholder="FOMO, Mover SL..." class="inp"></div>
+      <div><label class="text-slate-400">MAE ($ máx flotante -)</label><input type="number" step="any" id="tMae" placeholder="Ej: 45" class="inp"></div>
+      <div><label class="text-slate-400">MFE ($ máx flotante +)</label><input type="number" step="any" id="tMfe" placeholder="Ej: 220" class="inp"></div>
+      <div><label class="text-slate-400">Estado Emocional</label><select id="tEmo" class="inp"><option>Disciplinado</option><option>Confiado</option><option>Ansioso</option><option>Frustrado</option></select></div>
+    </div>
+    <div class="text-xs"><label class="text-slate-400">Notas / Ejecución</label><textarea id="tNotes" rows="2" class="inp" placeholder="Detalles técnicos de la entrada y gestión..."></textarea></div>
+    <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+      <button onclick="closeModal('tradeModal')" class="px-3 py-1.5 text-xs bg-slate-800 rounded-lg">Cancelar</button>
+      <button onclick="saveTrade()" class="px-4 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg">Guardar Trade</button>
+    </div>
   </div>
+</div>
 
-  <!-- CONTENEDOR DE NOTIFICACIONES TOAST -->
-  <div id="toastContainer" class="fixed bottom-4 right-4 z-[80] space-y-2 pointer-events-none"></div>
+<!-- MODAL CUENTAS -->
+<div id="accModal" class="fixed inset-0 z-50 hidden bg-black/75 flex items-center justify-center p-2">
+  <div class="card w-full max-w-md p-4 space-y-3 text-xs">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+      <h3 class="font-bold text-sm">Configurar Cuenta Activa / Nueva</h3>
+      <button onclick="closeModal('accModal')">✕</button>
+    </div>
+    <div class="space-y-2">
+      <div><label class="text-slate-400">Nombre Cuenta</label><input id="aName" class="inp"></div>
+      <div class="grid grid-cols-2 gap-2">
+        <div><label class="text-slate-400">Balance Inicial</label><input type="number" id="aBal" class="inp"></div>
+        <div><label class="text-slate-400">Moneda</label><select id="aCur" class="inp"><option value="$">$ USD</option><option value="€">€ EUR</option></select></div>
+        <div><label class="text-slate-400">Objetivo Profit ($)</label><input type="number" id="aTarget" class="inp"></div>
+        <div><label class="text-slate-400">Pérdida Diaria Máx ($)</label><input type="number" id="aDaily" class="inp"></div>
+        <div><label class="text-slate-400">Drawdown Máx ($)</label><input type="number" id="aMaxDD" class="inp"></div>
+      </div>
+    </div>
+    <div class="flex justify-between pt-2 border-t border-slate-800">
+      <button onclick="createNewAcc()" class="px-3 py-1.5 bg-emerald-700 text-white rounded-lg">+ Crear como Nueva</button>
+      <button onclick="updateAcc()" class="px-3 py-1.5 bg-blue-600 text-white font-bold rounded-lg">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
 
-  <!-- ========================================================= -->
-  <!-- LÓGICA COMPLETA DE LA APLICACIÓN                          -->
-  <!-- ========================================================= -->
-  <script>
-    const STORAGE_KEY = 'pnl_ledger_pro_v1';
+<script>
+const KEY='pnl_ledger_pro_v2';
+let state=JSON.parse(localStorage.getItem(KEY))||{
+  unit:'$',priv:false,activeAcc:'acc1',calDate:new Date().toISOString().slice(0,7),
+  accounts:[
+    {id:'acc1',name:'Fondeo $50k EOD',bal:50000,cur:'$',target:3000,daily:1100,maxdd:2000},
+    {id:'acc2',name:'Cuenta Real €10k',bal:10000,cur:'€',target:1500,daily:300,maxdd:1000}
+  ],
+  trades:[
+    {id:'t1',acc:'acc1',date:'2026-10-27T09:30',sym:'XAUUSD',side:'LONG',size:1,entry:2735.2,exit:2741.0,gross:580,fee:6,risk:150,ses:'Londres',setup:'EMA 50/200',err:'',mae:40,mfe:620,emo:'Disciplinado',notes:'Tendencia limpia H1'},
+    {id:'t2',acc:'acc1',date:'2026-10-28T15:40',sym:'MNQ',side:'SHORT',size:2,entry:20450,exit:20485,gross:-140,fee:4,risk:140,ses:'Nueva York',setup:'SMC Liquidity',err:'Entrada anticipada',mae:155,mfe:30,emo:'Ansioso',notes:'Entré antes del cierre de vela'},
+    {id:'t3',acc:'acc1',date:'2026-10-29T10:15',sym:'EURUSD',side:'LONG',size:1,entry:1.0820,exit:1.0855,gross:350,fee:5,risk:100,ses:'Londres',setup:'EMA 50/200',err:'',mae:25,mfe:380,emo:'Disciplinado',notes:'Pullback exacto EMA 50'},
+    {id:'t4',acc:'acc1',date:'2026-10-30T16:10',sym:'XAUUSD',side:'LONG',size:1,entry:2750.0,exit:2754.4,gross:440,fee:6,risk:150,ses:'Nueva York',setup:'Breakout NY',err:'',mae:60,mfe:490,emo:'Confiado',notes:'Impulso post noticias'}
+  ]
+};
+let charts={};
 
-    // Estado global en memoria
-    let state = null;
-    let activeTab = 'dashboard';
-    let equityAxisMode = 'trade'; // 'trade' | 'date'
-    let currentSort = { field: 'entryTime', asc: false };
-    let calendarCursor = { year: 2026, month: 9 }; // 0-indexed (9 = Octubre 2026)
-    let activeDayModalDate = null;
+function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+function curAcc(){return state.accounts.find(a=>a.id===state.activeAcc)||state.accounts[0];}
+function net(t){return (+t.gross||0)-(+t.fee||0);}
+function fmt(v,acc=curAcc()){
+  if(state.priv)return '••••';
+  if(state.unit==='%')return ((v/acc.bal)*100).toFixed(2)+'%';
+  if(state.unit==='R')return (v/100).toFixed(2)+'R';
+  return (v<0?'-':'')+acc.cur+Math.abs(v).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
 
-    // Estado temporal del modal de trade
-    let modalSelectedRating = 4;
-    let modalSelectedTags = new Set();
+function showTab(id){
+  ['dash','cal','trades','analytics','sim'].forEach(t=>{
+    document.getElementById('v-'+t).classList.toggle('hidden',t!==id);
+    document.getElementById('t-'+t).className=t===id?'px-3 py-1.5 rounded-lg tab-active whitespace-nowrap':'px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap';
+  });
+  renderAll();
+}
+function setUnit(u){
+  state.unit=u;['$','%','R'].forEach(x=>document.getElementById('u-'+x).classList.toggle('tab-active',x===u));
+  save();renderAll();
+}
+function togglePriv(){state.priv=!state.priv;save();renderAll();}
+function changeAcc(){state.activeAcc=document.getElementById('accSelect').value;save();renderAll();}
 
-    // Estado del Simulador What-If
-    let whatIfExcludedTags = new Set();
-    let whatIfExcludedDays = new Set(); // 1=Lun .. 5=Vie
-    let whatIfExcludedSessions = new Set();
-    let whatIfExcludedSymbols = new Set();
+function getFilteredTrades(){
+  const sym=(document.getElementById('fSym')?.value||'').toUpperCase();
+  const side=document.getElementById('fSide')?.value||'';
+  const setup=document.getElementById('fSetup')?.value||'';
+  return state.trades.filter(t=>t.acc===curAcc().id&&(!sym||t.sym.includes(sym))&&(!side||t.side===side)&&(!setup||t.setup===setup)).sort((a,b)=>a.date.localeCompare(b.date));
+}
 
-    // Instancias de Chart.js para destruir/actualizar limpiamente
-    const charts = {};
+function calcStats(list,acc){
+  let total=0,wins=0,losses=0,sumW=0,sumL=0,peak=acc.bal,eq=acc.bal,maxDD=0,rSum=0;
+  const eqCurve=[acc.bal],ddCurve=[0],labels=['Inicio'];
+  list.forEach(t=>{
+    const n=net(t);total+=n;eq+=n;
+    if(eq>peak)peak=eq;
+    const dd=peak-eq;if(dd>maxDD)maxDD=dd;
+    if(n>0){wins++;sumW+=n;}else if(n<0){losses++;sumL+=Math.abs(n);}
+    rSum+=t.risk?n/t.risk:0;
+    eqCurve.push(eq);ddCurve.push(-dd);labels.push(t.date.slice(5,10));
+  });
+  const cnt=list.length,wr=cnt?(wins/cnt)*100:0,pf=sumL?sumW/sumL:(sumW>0?99.9:0);
+  const exp=cnt?total/cnt:0,avgR=cnt?rSum/cnt:0;
+  return {total,cnt,wr,pf,exp,maxDD,avgR,eq,eqCurve,ddCurve,labels};
+}
 
-    // =========================================================
-    // 1. GENERADOR DE DATOS DEMO REALISTAS (~20 OPERACIONES)
-    // =========================================================
-    function buildDemoState() {
-      const demoAccounts = [
-        {
-          id: 'acc_prop_50k',
-          name: 'Cuenta Fondeo $50k EOD',
-          type: 'Fondeo',
-          initialBalance: 50000,
-          currency: '$',
-          profitTarget: 3000,
-          maxDailyLoss: 1250,
-          maxDrawdown: 2500
-        },
-        {
-          id: 'acc_real_fx',
-          name: 'Cuenta Real Forex €10k',
-          type: 'Real',
-          initialBalance: 10000,
-          currency: '€',
-          profitTarget: 1500,
-          maxDailyLoss: 400,
-          maxDrawdown: 1000
-        }
-      ];
+function renderAll(){
+  const acc=curAcc();
+  const sel=document.getElementById('accSelect');
+  sel.innerHTML=state.accounts.map(a=>`<option value="${a.id}" ${a.id===acc.id?'selected':''}>${a.name} (${a.cur}${a.bal})</option>`).join('');
 
-      const strategies = [
-        'SMC / Barrido Liquidez',
-        'Ruptura Apertura NY (ORB)',
-        'Tendencia EMA 50/200',
-        'Reversión VWAP Institucional',
-        'Scalping Momentum M5'
-      ];
+  const allAccTrades=state.trades.filter(t=>t.acc===acc.id).sort((a,b)=>a.date.localeCompare(b.date));
+  const st=calcStats(allAccTrades,acc);
 
-      const tags = [
-        'Plan cumplido 100%',
-        'Paciencia A+',
-        'Entrada anticipada',
-        'Cerrar antes de TP',
-        'Mover SL',
-        'FOMO',
-        'Sobreoperar'
-      ];
+  // Setups filter options
+  const setups=[...new Set(allAccTrades.map(t=>t.setup).filter(Boolean))];
+  const fs=document.getElementById('fSetup');const curFs=fs.value;
+  fs.innerHTML='<option value="">Todas Estrategias</option>'+setups.map(s=>`<option value="${s}" ${s===curFs?'selected':''}>${s}</option>`).join('');
 
-      // 19 trades en la cuenta principal $50k durante Octubre 2026 + 3 trades en Cuenta Real Forex
-      const demoTrades = [
-        {
-          id: 'tr_01', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-01T14:35', exitTime: '2026-10-01T15:18',
-          symbol: 'MNQ', side: 'LONG', size: 3,
-          entryPrice: 20410.50, exitPrice: 20495.50, stopLoss: 20370.50, takeProfit: 20500.00,
-          grossPnl: 510.00, commission: 11.40, netPnl: 498.60, riskAmount: 240,
-          mae: 65, mfe: 540, session: 'Nueva York', strategy: 'Ruptura Apertura NY (ORB)',
-          tags: ['Plan cumplido 100%', 'Paciencia A+'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Ruptura limpia del rango de los primeros 15 min en NY con volumen institucional a favor.',
-          screenshot: 'https://placehold.co/900x500/09090b/10b981?text=MNQ+LONG+%2B%24498.60+(ORB+NY)'
-        },
-        {
-          id: 'tr_02', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-02T09:15', exitTime: '2026-10-02T10:40',
-          symbol: 'XAU/USD', side: 'LONG', size: 1.0,
-          entryPrice: 2652.40, exitPrice: 2658.90, stopLoss: 2648.90, takeProfit: 2661.00,
-          grossPnl: 650.00, commission: 7.00, netPnl: 643.00, riskAmount: 350,
-          mae: 90, mfe: 710, session: 'Londres', strategy: 'SMC / Barrido Liquidez',
-          tags: ['Plan cumplido 100%'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Barrido de mínimos de Asia en el Oro seguido de desplazamiento alcista claro en M15.',
-          screenshot: 'https://placehold.co/900x500/09090b/10b981?text=XAUUSD+SMC+Sweep+%2B%24643'
-        },
-        {
-          id: 'tr_03', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-05T15:10', exitTime: '2026-10-05T15:32',
-          symbol: 'MNQ', side: 'SHORT', size: 4,
-          entryPrice: 20580.00, exitPrice: 20618.00, stopLoss: 20615.00, takeProfit: 20490.00,
-          grossPnl: -304.00, commission: 15.20, netPnl: -319.20, riskAmount: 280,
-          mae: 320, mfe: 85, session: 'Nueva York', strategy: 'Reversión VWAP Institucional',
-          tags: ['Entrada anticipada', 'FOMO'], rating: 2,
-          checklist: { htf: false, risk: true, poi: false, news: true },
-          notes: 'Entré en corto tratando de adivinar el techo sin esperar cierre de vela debajo del VWAP.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_04', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-06T13:45', exitTime: '2026-10-06T15:05',
-          symbol: 'EUR/USD', side: 'LONG', size: 2.5,
-          entryPrice: 1.0942, exitPrice: 1.0961, stopLoss: 1.0932, takeProfit: 1.0965,
-          grossPnl: 475.00, commission: 15.00, netPnl: 460.00, riskAmount: 250,
-          mae: 55, mfe: 500, session: 'Solapamiento LDN/NY', strategy: 'Tendencia EMA 50/200',
-          tags: ['Plan cumplido 100%'], rating: 4,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Pullback milimétrico a la EMA 50 en H1 durante el solapamiento Londres/NY.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_05', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-07T14:40', exitTime: '2026-10-07T15:02',
-          symbol: 'MES', side: 'LONG', size: 5,
-          entryPrice: 5782.00, exitPrice: 5796.50, stopLoss: 5774.00, takeProfit: 5805.00,
-          grossPnl: 362.50, commission: 12.50, netPnl: 350.00, riskAmount: 200,
-          mae: 45, mfe: 520, session: 'Nueva York', strategy: 'Ruptura Apertura NY (ORB)',
-          tags: ['Cerrar antes de TP'], rating: 3,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Buena lectura pero cerré antes del TP por miedo a un retroceso menor; llegó directo a 5805.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_06', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-08T10:05', exitTime: '2026-10-08T11:20',
-          symbol: 'GBP/USD', side: 'SHORT', size: 2.0,
-          entryPrice: 1.3085, exitPrice: 1.3098, stopLoss: 1.3097, takeProfit: 1.3055,
-          grossPnl: -260.00, commission: 12.00, netPnl: -272.00, riskAmount: 240,
-          mae: 275, mfe: 140, session: 'Londres', strategy: 'SMC / Barrido Liquidez',
-          tags: ['Plan cumplido 100%'], rating: 4,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Pérdida totalmente estándar cumpliendo el plan. El mercado continuó buscando liquidez superior.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_07', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-09T15:20', exitTime: '2026-10-09T16:10',
-          symbol: 'XAU/USD', side: 'SHORT', size: 1.5,
-          entryPrice: 2670.00, exitPrice: 2673.20, stopLoss: 2672.00, takeProfit: 2662.00,
-          grossPnl: -480.00, commission: 10.50, netPnl: -490.50, riskAmount: 300,
-          mae: 510, mfe: 95, session: 'Nueva York', strategy: 'Scalping Momentum M5',
-          tags: ['Mover SL', 'FOMO', 'Sobreoperar'], rating: 1,
-          checklist: { htf: false, risk: false, poi: false, news: false },
-          notes: 'Error grave viernes tarde: moví el Stop Loss esperando giro post-noticia y perdí -1.6R.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_08', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-12T14:32', exitTime: '2026-10-12T15:45',
-          symbol: 'MNQ', side: 'LONG', size: 3,
-          entryPrice: 20640.00, exitPrice: 20752.00, stopLoss: 20595.00, takeProfit: 20755.00,
-          grossPnl: 672.00, commission: 11.40, netPnl: 660.60, riskAmount: 270,
-          mae: 80, mfe: 690, session: 'Nueva York', strategy: 'SMC / Barrido Liquidez',
-          tags: ['Plan cumplido 100%', 'Paciencia A+'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Ejecución impecable tras el fin de semana de revisión. +2.45R dejando correr hasta objetivo.',
-          screenshot: 'https://placehold.co/900x500/09090b/6366f1?text=MNQ+A%2B+Setup+%2B%24660.60'
-        },
-        {
-          id: 'tr_09', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-13T09:30', exitTime: '2026-10-13T11:15',
-          symbol: 'EUR/USD', side: 'SHORT', size: 3.0,
-          entryPrice: 1.0915, exitPrice: 1.0897, stopLoss: 1.0924, takeProfit: 1.0895,
-          grossPnl: 540.00, commission: 18.00, netPnl: 522.00, riskAmount: 270,
-          mae: 60, mfe: 570, session: 'Londres', strategy: 'Tendencia EMA 50/200',
-          tags: ['Plan cumplido 100%'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Continuación bajista limpia en apertura europea.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_10', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-14T14:50', exitTime: '2026-10-14T15:25',
-          symbol: 'BTC/USD', side: 'LONG', size: 0.5,
-          entryPrice: 66400, exitPrice: 67280, stopLoss: 65950, takeProfit: 67400,
-          grossPnl: 440.00, commission: 14.00, netPnl: 426.00, riskAmount: 225,
-          mae: 75, mfe: 490, session: 'Solapamiento LDN/NY', strategy: 'Ruptura Apertura NY (ORB)',
-          tags: ['Plan cumplido 100%'], rating: 4,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Impulso de flujos ETF en apertura americana.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_11', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-15T03:20', exitTime: '2026-10-15T04:55',
-          symbol: 'XAU/USD', side: 'LONG', size: 1.0,
-          entryPrice: 2681.00, exitPrice: 2678.60, stopLoss: 2678.50, takeProfit: 2687.00,
-          grossPnl: -240.00, commission: 7.00, netPnl: -247.00, riskAmount: 250,
-          mae: 250, mfe: 90, session: 'Asia', strategy: 'Scalping Momentum M5',
-          tags: ['Entrada anticipada', 'Sobreoperar'], rating: 2,
-          checklist: { htf: true, risk: true, poi: false, news: true },
-          notes: 'Baja volatilidad en sesión asiática; no debí operar fuera de mi horario principal.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_12', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-16T14:35', exitTime: '2026-10-16T15:30',
-          symbol: 'MES', side: 'SHORT', size: 6,
-          entryPrice: 5824.00, exitPrice: 5809.00, stopLoss: 5832.00, takeProfit: 5806.00,
-          grossPnl: 450.00, commission: 15.00, netPnl: 435.00, riskAmount: 240,
-          mae: 60, mfe: 480, session: 'Nueva York', strategy: 'Reversión VWAP Institucional',
-          tags: ['Plan cumplido 100%'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Rechazo institucional en desviación estándar +2 del VWAP.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_13', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-19T14:42', exitTime: '2026-10-19T15:12',
-          symbol: 'MNQ', side: 'LONG', size: 3,
-          entryPrice: 20810.00, exitPrice: 20772.00, stopLoss: 20770.00, takeProfit: 20900.00,
-          grossPnl: -228.00, commission: 11.40, netPnl: -239.40, riskAmount: 240,
-          mae: 240, mfe: 130, session: 'Nueva York', strategy: 'Ruptura Apertura NY (ORB)',
-          tags: ['Plan cumplido 100%'], rating: 4,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Falsa ruptura en lunes de rango estrecho. Riesgo perfectamente controlado a -1R.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_14', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-20T13:30', exitTime: '2026-10-20T15:10',
-          symbol: 'XAU/USD', side: 'LONG', size: 1.2,
-          entryPrice: 2690.50, exitPrice: 2696.80, stopLoss: 2688.00, takeProfit: 2697.50,
-          grossPnl: 756.00, commission: 8.40, netPnl: 747.60, riskAmount: 300,
-          mae: 84, mfe: 790, session: 'Solapamiento LDN/NY', strategy: 'SMC / Barrido Liquidez',
-          tags: ['Plan cumplido 100%', 'Paciencia A+'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Gran expansión alcista tras toma de liquidez en M15. Mejor operación del mes.',
-          screenshot: 'https://placehold.co/900x500/09090b/10b981?text=XAUUSD+LONG+%2B%24747.60+(%2B2.49R)'
-        },
-        {
-          id: 'tr_15', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-21T09:45', exitTime: '2026-10-21T11:05',
-          symbol: 'GBP/USD', side: 'LONG', size: 2.5,
-          entryPrice: 1.3110, exitPrice: 1.3125, stopLoss: 1.3100, takeProfit: 1.3135,
-          grossPnl: 375.00, commission: 15.00, netPnl: 360.00, riskAmount: 250,
-          mae: 50, mfe: 590, session: 'Londres', strategy: 'Tendencia EMA 50/200',
-          tags: ['Cerrar antes de TP'], rating: 3,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Dejé casi $230 sobre la mesa al cerrar manualmente en el primer retroceso en M5.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_16', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-22T15:50', exitTime: '2026-10-22T16:15',
-          symbol: 'MNQ', side: 'SHORT', size: 4,
-          entryPrice: 20890.00, exitPrice: 20938.00, stopLoss: 20925.00, takeProfit: 20800.00,
-          grossPnl: -384.00, commission: 15.20, netPnl: -399.20, riskAmount: 280,
-          mae: 410, mfe: 60, session: 'Nueva York', strategy: 'Scalping Momentum M5',
-          tags: ['Mover SL', 'FOMO'], rating: 1,
-          checklist: { htf: false, risk: false, poi: false, news: true },
-          notes: 'Perseguí una vela roja sin estructura y amplié el SL 13 puntos extra.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_17', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-26T14:35', exitTime: '2026-10-26T15:50',
-          symbol: 'MNQ', side: 'LONG', size: 3,
-          entryPrice: 20920.00, exitPrice: 21015.00, stopLoss: 20880.00, takeProfit: 21020.00,
-          grossPnl: 570.00, commission: 11.40, netPnl: 558.60, riskAmount: 240,
-          mae: 72, mfe: 590, session: 'Nueva York', strategy: 'Ruptura Apertura NY (ORB)',
-          tags: ['Plan cumplido 100%', 'Paciencia A+'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Apertura direccional limpia del Nasdaq hacia el nivel psicológico 21,000.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_18', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-28T13:55', exitTime: '2026-10-28T15:20',
-          symbol: 'EUR/USD', side: 'LONG', size: 2.5,
-          entryPrice: 1.0950, exitPrice: 1.0968, stopLoss: 1.0940, takeProfit: 1.0970,
-          grossPnl: 450.00, commission: 15.00, netPnl: 435.00, riskAmount: 250,
-          mae: 40, mfe: 475, session: 'Solapamiento LDN/NY', strategy: 'SMC / Barrido Liquidez',
-          tags: ['Plan cumplido 100%'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Order Block H1 respetado al pip.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_19', accountId: 'acc_prop_50k',
-          entryTime: '2026-10-30T14:40', exitTime: '2026-10-30T15:35',
-          symbol: 'XAU/USD', side: 'LONG', size: 1.0,
-          entryPrice: 2712.00, exitPrice: 2716.80, stopLoss: 2709.50, takeProfit: 2718.00,
-          grossPnl: 480.00, commission: 7.00, netPnl: 473.00, riskAmount: 250,
-          mae: 65, mfe: 515, session: 'Nueva York', strategy: 'Tendencia EMA 50/200',
-          tags: ['Plan cumplido 100%', 'Paciencia A+'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Cierre de mes superando el Profit Target de $3,000 de la evaluación con control total del Drawdown.',
-          screenshot: ''
-        },
-        // Operaciones demo en la segunda cuenta (Cuenta Real Forex €10k)
-        {
-          id: 'tr_20', accountId: 'acc_real_fx',
-          entryTime: '2026-10-14T09:20', exitTime: '2026-10-14T11:45',
-          symbol: 'EUR/USD', side: 'LONG', size: 1.0,
-          entryPrice: 1.0910, exitPrice: 1.0938, stopLoss: 1.0898, takeProfit: 1.0940,
-          grossPnl: 280.00, commission: 6.00, netPnl: 274.00, riskAmount: 120,
-          mae: 32, mfe: 295, session: 'Londres', strategy: 'SMC / Barrido Liquidez',
-          tags: ['Plan cumplido 100%'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Entrada limpia en cuenta personal tras confirmación M15.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_21', accountId: 'acc_real_fx',
-          entryTime: '2026-10-21T14:15', exitTime: '2026-10-21T15:05',
-          symbol: 'GBP/USD', side: 'SHORT', size: 1.0,
-          entryPrice: 1.3120, exitPrice: 1.3131, stopLoss: 1.3132, takeProfit: 1.3090,
-          grossPnl: -110.00, commission: 6.00, netPnl: -116.00, riskAmount: 120,
-          mae: 118, mfe: 45, session: 'Solapamiento LDN/NY', strategy: 'Reversión VWAP Institucional',
-          tags: ['Plan cumplido 100%'], rating: 4,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Stop respetado sin dudar.',
-          screenshot: ''
-        },
-        {
-          id: 'tr_22', accountId: 'acc_real_fx',
-          entryTime: '2026-10-27T09:50', exitTime: '2026-10-27T12:30',
-          symbol: 'XAU/USD', side: 'LONG', size: 0.5,
-          entryPrice: 2701.00, exitPrice: 2707.40, stopLoss: 2698.50, takeProfit: 2708.00,
-          grossPnl: 320.00, commission: 3.50, netPnl: 316.50, riskAmount: 125,
-          mae: 40, mfe: 340, session: 'Londres', strategy: 'Tendencia EMA 50/200',
-          tags: ['Plan cumplido 100%', 'Paciencia A+'], rating: 5,
-          checklist: { htf: true, risk: true, poi: true, news: true },
-          notes: 'Excelente continuación tendencial en Londres.',
-          screenshot: ''
-        }
-      ];
+  // Prop rules
+  const today=new Date().toISOString().slice(0,10);
+  const todayLoss=Math.abs(Math.min(0,allAccTrades.filter(t=>t.date.startsWith(today)).reduce((a,b)=>a+net(b),0)));
+  const pTarget=Math.min(100,Math.max(0,(st.total/(acc.target||1))*100));
+  const pDaily=Math.min(100,(todayLoss/(acc.daily||1))*100);
+  const pDD=Math.min(100,(st.maxDD/(acc.maxdd||1))*100);
+  document.getElementById('propRules').innerHTML=`
+    <div><div class="flex justify-between mb-1"><span>🎯 Profit Target (${acc.cur}${acc.target})</span><span class="font-bold text-emerald-400">${pTarget.toFixed(1)}%</span></div><div class="h-2 bg-slate-800 rounded overflow-hidden"><div class="h-full bg-emerald-500" style="width:${pTarget}%"></div></div></div>
+    <div><div class="flex justify-between mb-1"><span>⚠️ Pérdida Hoy (${acc.cur}${todayLoss.toFixed(0)} / ${acc.cur}${acc.daily})</span><span class="font-bold text-amber-400">${pDaily.toFixed(1)}%</span></div><div class="h-2 bg-slate-800 rounded overflow-hidden"><div class="h-full bg-amber-500" style="width:${pDaily}%"></div></div></div>
+    <div><div class="flex justify-between mb-1"><span>🛡️ Max Drawdown (${acc.cur}${st.maxDD.toFixed(0)} / ${acc.cur}${acc.maxdd})</span><span class="font-bold text-rose-400">${pDD.toFixed(1)}%</span></div><div class="h-2 bg-slate-800 rounded overflow-hidden"><div class="h-full bg-rose-500" style="width:${pDD}%"></div></div></div>`;
 
-      const demoJournals = {
-        'acc_prop_50k_2026-10-09': {
-          mood: 'Frustrado / Revenge',
-          discipline: 3,
-          notes: 'Moví el SL un viernes por la tarde. Regla estricta a partir de hoy: prohibido tocar el SL una vez colocada la orden.'
-        },
-        'acc_prop_50k_2026-10-20': {
-          mood: 'Confiado / En Zona',
-          discipline: 10,
-          notes: 'Esperé pacientemente 45 minutos a que el Oro barriera mínimos antes de entrar. Cero ansiedad.'
-        },
-        'acc_prop_50k_2026-10-30': {
-          mood: 'Enfocado y Calmado',
-          discipline: 10,
-          notes: 'Objetivo de la prueba de fondeo superado con creces (+$4,702 netos). Consistencia sólida.'
-        }
-      };
+  // KPIs
+  const kpis=[
+    ['P&L Neto Total',fmt(st.total),st.total>=0?'text-emerald-400':'text-rose-400'],
+    ['Balance Actual',state.priv?'••••':acc.cur+st.eq.toFixed(2),'text-white'],
+    ['Winrate',st.wr.toFixed(1)+'% ('+st.cnt+' tr)','text-blue-400'],
+    ['Profit Factor',st.pf.toFixed(2),'text-purple-400'],
+    ['Esperanza / Trade',fmt(st.exp),st.exp>=0?'text-emerald-300':'text-rose-300'],
+    ['Promedio Múltiplo R',st.avgR.toFixed(2)+'R','text-amber-300']
+  ];
+  document.getElementById('kpiGrid').innerHTML=kpis.map(k=>`<div class="card p-3"><div class="text-[11px] text-slate-400">${k[0]}</div><div class="text-base sm:text-lg font-bold mt-0.5 ${k[2]}">${k[1]}</div></div>`).join('');
 
-      return {
-        accounts: demoAccounts,
-        activeAccountId: 'acc_prop_50k',
-        trades: demoTrades,
-        dailyJournals: demoJournals,
-        strategies,
-        tags,
-        settings: {
-          theme: 'dark',
-          displayMode: 'currency', // 'currency' | 'percent' | 'rmultiple'
-          privacyMode: false
-        }
-      };
-    }
+  drawChart('eqChart','line',{labels:st.labels,datasets:[{label:'Equidad',data:st.eqCurve,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.12)',fill:true,tension:0.25}]});
+  drawChart('ddChart','line',{labels:st.labels,datasets:[{label:'Drawdown',data:st.ddCurve,borderColor:'#f43f5e',backgroundColor:'rgba(244,63,94,0.18)',fill:true,tension:0.2}]});
 
-    // =========================================================
-    // 2. PERSISTENCIA Y UTILIDADES DE FORMATO
-    // =========================================================
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
-            state = parsed;
-            return;
-          }
-        }
-      } catch (e) {
-        console.error('Error cargando estado local:', e);
-      }
-      state = buildDemoState();
-      saveState();
-    }
+  renderCalendar(allAccTrades,acc);
+  renderTradesTable(getFilteredTrades(),acc);
+  renderAnalytics(allAccTrades);
+  renderSim();
+}
 
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch (e) {
-        showToast('Espacio de almacenamiento casi lleno. Reduce el tamaño de capturas locales.', 'error');
-      }
-    }
+function drawChart(id,type,data,opts={}){
+  const el=document.getElementById(id);if(!el)return;
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(el,{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#1e293b'}},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'#1e293b'}}},...opts}});
+}
 
-    function getActiveAccount() {
-      return state.accounts.find(a => a.id === state.activeAccountId) || state.accounts[0];
-    }
+function moveMonth(d){
+  const [y,m]=state.calDate.split('-').map(Number);
+  const nd=new Date(y,m-1+d,1);
+  state.calDate=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0');
+  save();renderAll();
+}
 
-    function getRMultiple(trade) {
-      const risk = Number(trade.riskAmount) || 0;
-      if (risk <= 0) return 0;
-      return Number(trade.netPnl) / risk;
-    }
+function renderCalendar(trades,acc){
+  const [y,m]=state.calDate.split('-').map(Number);
+  const dt=new Date(y,m-1,1);
+  document.getElementById('calTitle').textContent=dt.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+  const daysInMonth=new Date(y,m,0).getDate();
+  const startDay=(dt.getDay()+6)%7;
+  const byDay={};
+  trades.filter(t=>t.date.startsWith(state.calDate)).forEach(t=>{
+    const d=+t.date.slice(8,10);byDay[d]=byDay[d]||{pnl:0,cnt:0};byDay[d].pnl+=net(t);byDay[d].cnt++;
+  });
+  let html='';
+  for(let i=0;i<startDay;i++)html+='<div class="h-16 sm:h-20 bg-slate-900/30 rounded"></div>';
+  let weeks=[],wPnl=0,wCnt=0;
+  for(let d=1;d<=daysInMonth;d++){
+    const info=byDay[d];
+    const cls=info?(info.pnl>=0?'bg-emerald-950/70 border-emerald-700/60 text-emerald-300':'bg-rose-950/70 border-rose-700/60 text-rose-300'):'bg-slate-900/60 border-slate-800 text-slate-500';
+    if(info){wPnl+=info.pnl;wCnt+=info.cnt;}
+    const dateStr=`${state.calDate}-${String(d).padStart(2,'0')}`;
+    html+=`<div onclick="quickAddDay('${dateStr}')" class="h-16 sm:h-20 p-1.5 rounded border ${cls} flex flex-col justify-between cursor-pointer hover:brightness-125">
+      <span class="text-[10px] font-bold">${d}</span>
+      ${info?`<div class="text-right"><div class="text-[11px] sm:text-xs font-bold leading-tight">${fmt(info.pnl,acc)}</div><div class="text-[9px] opacity-75">${info.cnt} tr</div></div>`:''}
+    </div>`;
+    if((startDay+d)%7===0||d===daysInMonth){weeks.push({pnl:wPnl,cnt:wCnt});wPnl=0;wCnt=0;}
+  }
+  document.getElementById('calGrid').innerHTML=html;
+  document.getElementById('weekSummary').innerHTML=weeks.map((w,i)=>`<div class="p-2 rounded bg-slate-900 border border-slate-800 flex justify-between items-center"><span>Semana ${i+1} (${w.cnt} tr)</span><span class="font-bold ${w.pnl>=0?'text-emerald-400':'text-rose-400'}">${fmt(w.pnl,acc)}</span></div>`).join('');
+}
 
-    // Formateo inteligente respetando Modo Privacidad y Modo de Visualización ($/€, %, R)
-    function formatMetricPnl(amountDollar, rValue = null, forceCurrency = false) {
-      const acc = getActiveAccount();
-      const sym = acc.currency || '$';
-      const initBal = Number(acc.initialBalance) || 1;
-      const mode = forceCurrency ? 'currency' : state.settings.displayMode;
+function renderTradesTable(list,acc){
+  document.getElementById('tradeTbody').innerHTML=list.slice().reverse().map(t=>{
+    const n=net(t),r=t.risk?(n/t.risk).toFixed(2)+'R':'-';
+    return `<tr class="hover:bg-slate-800/40">
+      <td class="p-2.5 whitespace-nowrap"><div class="font-medium">${t.date.replace('T',' ')}</div><div class="text-[10px] text-slate-400">${t.ses||''}</div></td>
+      <td class="p-2.5 font-bold">${t.sym}</td>
+      <td class="p-2.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${t.side==='LONG'?'bg-emerald-900/60 text-emerald-300':'bg-rose-900/60 text-rose-300'}">${t.side}</span></td>
+      <td class="p-2.5">${t.size}</td>
+      <td class="p-2.5 whitespace-nowrap">${t.entry||'-'} → ${t.exit||'-'}</td>
+      <td class="p-2.5">${r}</td>
+      <td class="p-2.5"><div>${t.setup||'-'}</div>${t.err?`<span class="text-[10px] text-rose-400">⚠ ${t.err}</span>`:''}</td>
+      <td class="p-2.5 text-right font-bold ${n>=0?'text-emerald-400':'text-rose-400'}">${fmt(n,acc)}</td>
+      <td class="p-2.5 text-center whitespace-nowrap">
+        <button onclick="editTrade('${t.id}')" class="px-2 py-1 bg-slate-800 rounded mr-1">✏️</button>
+        <button onclick="delTrade('${t.id}')" class="px-2 py-1 bg-rose-950 text-rose-300 rounded">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="9" class="p-6 text-center text-slate-500">Sin operaciones registradas</td></tr>';
+}
 
-      if (mode === 'percent') {
-        const pct = (amountDollar / initBal) * 100;
-        return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
-      }
-      if (mode === 'rmultiple' && rValue !== null) {
-        return `${rValue >= 0 ? '+' : ''}${rValue.toFixed(2)}R`;
-      }
+function renderAnalytics(trades){
+  const bySes={},bySet={};
+  trades.forEach(t=>{
+    const n=net(t);
+    bySes[t.ses||'Otra']=(bySes[t.ses||'Otra']||0)+n;
+    bySet[t.setup||'Sin Setup']=(bySet[t.setup||'Sin Setup']||0)+n;
+  });
+  drawChart('sesChart','bar',{labels:Object.keys(bySes),datasets:[{data:Object.values(bySes),backgroundColor:Object.values(bySes).map(v=>v>=0?'#10b981':'#f43f5e')}]});
+  drawChart('setupChart','bar',{labels:Object.keys(bySet),datasets:[{data:Object.values(bySet),backgroundColor:'#3b82f6'}]});
+  drawChart('maeChart','scatter',{datasets:[{label:'MAE vs PnL',data:trades.map(t=>({x:+(t.mae||0),y:net(t)})),backgroundColor:'#f43f5e'}]});
+  drawChart('mfeChart','scatter',{datasets:[{label:'MFE vs PnL',data:trades.map(t=>({x:+(t.mfe||0),y:net(t)})),backgroundColor:'#10b981'}]});
+}
 
-      if (state.settings.privacyMode) {
-        return `${amountDollar >= 0 ? '+' : '-'}${sym}••••`;
-      }
+function renderSim(){
+  const acc=curAcc();
+  const base=state.trades.filter(t=>t.acc===acc.id).sort((a,b)=>a.date.localeCompare(b.date));
+  const noErr=document.getElementById('simNoErr')?.checked;
+  const noFri=document.getElementById('simNoFri')?.checked;
+  const ses=document.getElementById('simSes')?.value;
+  const cap=+document.getElementById('simCap')?.value||0;
 
-      const abs = Math.abs(amountDollar).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return `${amountDollar >= 0 ? '+' : '-'}${sym}${abs}`;
-    }
+  const simList=base.filter(t=>{
+    if(noErr&&t.err)return false;
+    if(noFri&&new Date(t.date).getDay()===5)return false;
+    if(ses&&t.ses!==ses)return false;
+    return true;
+  }).map(t=>{
+    const n=net(t);
+    if(cap>0&&n<-cap)return {...t,gross:-cap,fee:0};
+    return t;
+  });
 
-    function formatCurrencyAbs(amount) {
-      const acc = getActiveAccount();
-      const sym = acc.currency || '$';
-      if (state.settings.privacyMode) return `${sym}••••••`;
-      return `${sym}${Number(amount).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
+  const sReal=calcStats(base,acc),sSim=calcStats(simList,acc);
+  const diff=sSim.total-sReal.total;
+  document.getElementById('simStats').innerHTML=`
+    <div class="p-2.5 bg-slate-900 rounded border border-slate-800"><div class="text-slate-400 text-[11px]">P&L Real</div><div class="font-bold text-sm">${fmt(sReal.total,acc)}</div></div>
+    <div class="p-2.5 bg-slate-900 rounded border border-slate-800"><div class="text-slate-400 text-[11px]">P&L Simulado</div><div class="font-bold text-sm text-blue-400">${fmt(sSim.total,acc)}</div></div>
+    <div class="p-2.5 bg-slate-900 rounded border border-slate-800"><div class="text-slate-400 text-[11px]">Diferencia Impacto</div><div class="font-bold text-sm ${diff>=0?'text-emerald-400':'text-rose-400'}">${diff>=0?'+':''}${fmt(diff,acc)}</div></div>
+    <div class="p-2.5 bg-slate-900 rounded border border-slate-800"><div class="text-slate-400 text-[11px]">Winrate Simulado</div><div class="font-bold text-sm">${sSim.wr.toFixed(1)}% (PF ${sSim.pf.toFixed(2)})</div></div>`;
 
-    function computeDurationLabel(entryStr, exitStr) {
-      if (!entryStr || !exitStr) return '—';
-      const diffMs = new Date(exitStr) - new Date(entryStr);
-      if (isNaN(diffMs) || diffMs < 0) return '—';
-      const mins = Math.round(diffMs / 60000);
-      if (mins < 60) return `${mins}m`;
-      const h = Math.floor(mins / 60);
-      const m = mins % 60;
-      return m > 0 ? `${h}h ${m}m` : `${h}h`;
-    }
+  drawChart('simChart','line',{labels:sSim.labels.length>=sReal.labels.length?sSim.labels:sReal.labels,datasets:[
+    {label:'Real',data:sReal.eqCurve,borderColor:'#64748b',tension:0.2},
+    {label:'Simulado',data:sSim.eqCurve,borderColor:'#3b82f6',tension:0.2}
+  ]},{plugins:{legend:{display:true,labels:{color:'#cbd5e1'}}}});
+}
 
-    function showToast(msg, type = 'success') {
-      const container = document.getElementById('toastContainer');
-      const el = document.createElement('div');
-      const colors = type === 'error'
-        ? 'bg-rose-600 text-white'
-        : type === 'info'
-          ? 'bg-indigo-600 text-white'
-          : 'bg-emerald-600 text-white';
-      el.className = `pointer-events-auto px-4 py-2.5 rounded-xl shadow-xl text-xs font-semibold flex items-center gap-2 fade-in ${colors}`;
-      el.innerHTML = `<span>${msg}</span>`;
-      container.appendChild(el);
-      setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transition = 'opacity 0.25s';
-        setTimeout(() => el.remove(), 260);
-      }, 3000);
-    }
+function openTradeModal(datePref){
+  document.getElementById('tmTitle').textContent='Registrar Operación';
+  document.getElementById('tId').value='';
+  document.getElementById('tDate').value=(datePref?datePref+'T10:00':new Date().toISOString().slice(0,16));
+  ['tSym','tEntry','tExit','tGross','tSetup','tErr','tMae','tMfe','tNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('tFee').value=0;document.getElementById('tSize').value=1;document.getElementById('tRisk').value=100;
+  document.getElementById('tradeModal').classList.remove('hidden');
+}
+function quickAddDay(d){openTradeModal(d);}
+function editTrade(id){
+  const t=state.trades.find(x=>x.id===id);if(!t)return;
+  document.getElementById('tmTitle').textContent='Editar Operación';
+  document.getElementById('tId').value=t.id;document.getElementById('tDate').value=t.date;
+  document.getElementById('tSym').value=t.sym;document.getElementById('tSide').value=t.side;
+  document.getElementById('tSize').value=t.size;document.getElementById('tEntry').value=t.entry;
+  document.getElementById('tExit').value=t.exit;document.getElementById('tGross').value=t.gross;
+  document.getElementById('tFee').value=t.fee;document.getElementById('tRisk').value=t.risk;
+  document.getElementById('tSes').value=t.ses;document.getElementById('tSetup').value=t.setup;
+  document.getElementById('tErr').value=t.err;document.getElementById('tMae').value=t.mae;
+  document.getElementById('tMfe').value=t.mfe;document.getElementById('tEmo').value=t.emo;
+  document.getElementById('tNotes').value=t.notes;
+  document.getElementById('tradeModal').classList.remove('hidden');
+}
+function saveTrade(){
+  const id=document.getElementById('tId').value||'tr_'+Date.now();
+  const obj={
+    id,acc:curAcc().id,date:document.getElementById('tDate').value,
+    sym:(document.getElementById('tSym').value||'ACTIVO').toUpperCase(),
+    side:document.getElementById('tSide').value,size:+document.getElementById('tSize').value||1,
+    entry:+document.getElementById('tEntry').value||0,exit:+document.getElementById('tExit').value||0,
+    gross:+document.getElementById('tGross').value||0,fee:+document.getElementById('tFee').value||0,
+    risk:+document.getElementById('tRisk').value||100,ses:document.getElementById('tSes').value,
+    setup:document.getElementById('tSetup').value.trim(),err:document.getElementById('tErr').value.trim(),
+    mae:+document.getElementById('tMae').value||0,mfe:+document.getElementById('tMfe').value||0,
+    emo:document.getElementById('tEmo').value,notes:document.getElementById('tNotes').value
+  };
+  const idx=state.trades.findIndex(x=>x.id===id);
+  if(idx>=0)state.trades[idx]=obj;else state.trades.push(obj);
+  save();closeModal('tradeModal');renderAll();
+}
+function delTrade(id){if(confirm('¿Eliminar esta operación?')){state.trades=state.trades.filter(x=>x.id!==id);save();renderAll();}}
 
-    function openConfirmModal(title, message, onConfirm) {
-      document.getElementById('confirmTitle').textContent = title;
-      document.getElementById('confirmMessage').textContent = message;
-      const btn = document.getElementById('confirmActionBtn');
-      btn.onclick = () => {
-        closeConfirmModal();
-        onConfirm();
-      };
-      const modal = document.getElementById('confirmModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
+function openAccModal(){
+  const a=curAcc();
+  document.getElementById('aName').value=a.name;document.getElementById('aBal').value=a.bal;
+  document.getElementById('aCur').value=a.cur;document.getElementById('aTarget').value=a.target;
+  document.getElementById('aDaily').value=a.daily;document.getElementById('aMaxDD').value=a.maxdd;
+  document.getElementById('accModal').classList.remove('hidden');
+}
+function updateAcc(){
+  const a=curAcc();
+  a.name=document.getElementById('aName').value;a.bal=+document.getElementById('aBal').value||10000;
+  a.cur=document.getElementById('aCur').value;a.target=+document.getElementById('aTarget').value||1000;
+  a.daily=+document.getElementById('aDaily').value||500;a.maxdd=+document.getElementById('aMaxDD').value||1000;
+  save();closeModal('accModal');renderAll();
+}
+function createNewAcc(){
+  const id='acc_'+Date.now();
+  state.accounts.push({
+    id,name:document.getElementById('aName').value||'Nueva Cuenta',
+    bal:+document.getElementById('aBal').value||10000,cur:document.getElementById('aCur').value,
+    target:+document.getElementById('aTarget').value||1000,daily:+document.getElementById('aDaily').value||500,
+    maxdd:+document.getElementById('aMaxDD').value||1000
+  });
+  state.activeAcc=id;save();closeModal('accModal');renderAll();
+}
+function closeModal(id){document.getElementById(id).classList.add('hidden');}
 
-    function closeConfirmModal() {
-      const modal = document.getElementById('confirmModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
+function exportData(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='pnl_ledger_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{try{state=JSON.parse(ev.target.result);save();renderAll();alert('Datos restaurados correctamente');}catch{alert('Archivo inválido');}};
+  r.readAsText(f);
+}
 
-    // =========================================================
-    // 3. MOTOR DE FILTRADO Y CÁLCULO DE MÉTRICAS (KPIs)
-    // =========================================================
-    function getAccountTrades() {
-      const acc = getActiveAccount();
-      return state.trades
-        .filter(t => t.accountId === acc.id)
-        .sort((a, b) => new Date(a.entryTime) - new Date(b.entryTime));
-    }
-
-    function getFilteredTrades() {
-      const base = getAccountTrades();
-      const from = document.getElementById('filterDateFrom')?.value || '';
-      const to = document.getElementById('filterDateTo')?.value || '';
-      const symbol = document.getElementById('filterSymbol')?.value || 'ALL';
-      const side = document.getElementById('filterSide')?.value || 'ALL';
-      const session = document.getElementById('filterSession')?.value || 'ALL';
-      const strategy = document.getElementById('filterStrategy')?.value || 'ALL';
-      const tag = document.getElementById('filterTag')?.value || 'ALL';
-
-      return base.filter(t => {
-        const dateOnly = (t.entryTime || '').slice(0, 10);
-        if (from && dateOnly < from) return false;
-        if (to && dateOnly > to) return false;
-        if (symbol !== 'ALL' && t.symbol !== symbol) return false;
-        if (side !== 'ALL' && t.side !== side) return false;
-        if (session !== 'ALL' && t.session !== session) return false;
-        if (strategy !== 'ALL' && t.strategy !== strategy) return false;
-        if (tag !== 'ALL' && !(t.tags || []).includes(tag)) return false;
-        return true;
-      });
-    }
-
-    // Calcula todas las métricas financieras de cualquier lista ordenada de trades
-    function computeAnalytics(trades, initialBalance) {
-      const totalTrades = trades.length;
-      let netPnl = 0;
-      let grossPnl = 0;
-      let totalComm = 0;
-      let grossProfit = 0;
-      let grossLoss = 0; // valor absoluto
-      let wins = 0;
-      let losses = 0;
-      let breakevens = 0;
-
-      let longTrades = 0, longWins = 0, longNet = 0;
-      let shortTrades = 0, shortWins = 0, shortNet = 0;
-
-      let totalR = 0;
-      let maxWin = 0;
-      let maxLoss = 0;
-
-      // Curva de equidad y Drawdown
-      let runningNet = 0;
-      let runningGross = 0;
-      let peakEquity = initialBalance;
-      let maxDdDollar = 0;
-      let maxDdPct = 0;
-
-      const equitySeries = [{ label: 'Inicio', net: 0, gross: 0, balance: initialBalance, ddDollar: 0, ddPct: 0 }];
-
-      // Rachas de trades
-      let curWinTrades = 0, maxWinTrades = 0;
-      let curLossTrades = 0, maxLossTrades = 0;
-
-      // Agrupación diaria para rachas de días y pérdida diaria
-      const dailyMap = {};
-
-      trades.forEach((t, idx) => {
-        const net = Number(t.netPnl) || 0;
-        const gross = Number(t.grossPnl) || 0;
-        const comm = Number(t.commission) || 0;
-        const r = getRMultiple(t);
-
-        netPnl += net;
-        grossPnl += gross;
-        totalComm += comm;
-        totalR += r;
-
-        if (net > 0) {
-          wins++;
-          grossProfit += net;
-          if (net > maxWin) maxWin = net;
-          curWinTrades++;
-          curLossTrades = 0;
-          if (curWinTrades > maxWinTrades) maxWinTrades = curWinTrades;
-        } else if (net < 0) {
-          losses++;
-          grossLoss += Math.abs(net);
-          if (net < maxLoss) maxLoss = net;
-          curLossTrades++;
-          curWinTrades = 0;
-          if (curLossTrades > maxLossTrades) maxLossTrades = curLossTrades;
-        } else {
-          breakevens++;
-        }
-
-        if (t.side === 'LONG') {
-          longTrades++;
-          longNet += net;
-          if (net > 0) longWins++;
-        } else {
-          shortTrades++;
-          shortNet += net;
-          if (net > 0) shortWins++;
-        }
-
-        runningNet += net;
-        runningGross += gross;
-        const currentEquity = initialBalance + runningNet;
-        if (currentEquity > peakEquity) peakEquity = currentEquity;
-        const ddDollar = peakEquity - currentEquity;
-        const ddPct = peakEquity > 0 ? (ddDollar / peakEquity) * 100 : 0;
-        if (ddDollar > maxDdDollar) maxDdDollar = ddDollar;
-        if (ddPct > maxDdPct) maxDdPct = ddPct;
-
-        const dayKey = (t.entryTime || '').slice(0, 10);
-        if (dayKey) {
-          if (!dailyMap[dayKey]) dailyMap[dayKey] = { net: 0, gross: 0, count: 0, wins: 0 };
-          dailyMap[dayKey].net += net;
-          dailyMap[dayKey].gross += gross;
-          dailyMap[dayKey].count++;
-          if (net > 0) dailyMap[dayKey].wins++;
-        }
-
-        equitySeries.push({
-          label: `#${idx + 1} ${t.symbol}`,
-          date: dayKey,
-          net: Number(runningNet.toFixed(2)),
-          gross: Number(runningGross.toFixed(2)),
-          balance: Number(currentEquity.toFixed(2)),
-          ddDollar: Number((-ddDollar).toFixed(2)),
-          ddPct: Number((-ddPct).toFixed(2))
-        });
-      });
-
-      // Rachas de días ganadores / perdedores y peor día
-      const sortedDays = Object.keys(dailyMap).sort();
-      let curWinDays = 0, maxWinDays = 0;
-      let curLossDays = 0, maxLossDays = 0;
-      let worstDayLoss = 0; // negativo si hubo día rojo
-
-      sortedDays.forEach(d => {
-        const dNet = dailyMap[d].net;
-        if (dNet < worstDayLoss) worstDayLoss = dNet;
-        if (dNet > 0) {
-          curWinDays++;
-          curLossDays = 0;
-          if (curWinDays > maxWinDays) maxWinDays = curWinDays;
-        } else if (dNet < 0) {
-          curLossDays++;
-          curWinDays = 0;
-          if (curLossDays > maxLossDays) maxLossDays = curLossDays;
-        }
-      });
-
-      const winrate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
-      const longWinrate = longTrades > 0 ? (longWins / longTrades) * 100 : 0;
-      const shortWinrate = shortTrades > 0 ? (shortWins / shortTrades) * 100 : 0;
-      const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? 99.99 : 0);
-      const avgWin = wins > 0 ? grossProfit / wins : 0;
-      const avgLoss = losses > 0 ? grossLoss / losses : 0;
-      const payoffRatio = avgLoss > 0 ? avgWin / avgLoss : 0;
-      const expectancyDollar = totalTrades > 0 ? netPnl / totalTrades : 0;
-      const expectancyR = totalTrades > 0 ? totalR / totalTrades : 0;
-      const returnPct = initialBalance > 0 ? (netPnl / initialBalance) * 100 : 0;
-      const recoveryFactor = maxDdDollar > 0 ? netPnl / maxDdDollar : 0;
-
-      return {
-        totalTrades, wins, losses, breakevens,
-        netPnl, grossPnl, totalComm, totalR,
-        currentBalance: initialBalance + netPnl,
-        returnPct, winrate,
-        longTrades, longWinrate, longNet,
-        shortTrades, shortWinrate, shortNet,
-        profitFactor, avgWin, avgLoss, payoffRatio,
-        expectancyDollar, expectancyR,
-        maxWin, maxLoss,
-        maxDdDollar, maxDdPct, recoveryFactor,
-        curWinTrades, maxWinTrades, curLossTrades, maxLossTrades,
-        curWinDays, maxWinDays, curLossDays, maxLossDays,
-        worstDayLoss,
-        dailyMap,
-        equitySeries
-      };
-    }
-
-    // =========================================================
-    // 4. RENDERIZADO DE CABECERA, NAVEGACIÓN Y TEMA
-    // =========================================================
-    function applyThemeUI() {
-      const html = document.documentElement;
-      if (state.settings.theme === 'dark') {
-        html.classList.add('dark');
-      } else {
-        html.classList.remove('dark');
-      }
-      const icon = document.getElementById('themeIcon');
-      if (icon) {
-        icon.setAttribute('data-lucide', state.settings.theme === 'dark' ? 'sun' : 'moon');
-      }
-    }
-
-    function toggleTheme() {
-      state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
-      saveState();
-      applyThemeUI();
-      refreshAll();
-    }
-
-    function setDisplayMode(mode) {
-      state.settings.displayMode = mode;
-      saveState();
-      refreshAll();
-    }
-
-    function togglePrivacyMode() {
-      state.settings.privacyMode = !state.settings.privacyMode;
-      saveState();
-      showToast(state.settings.privacyMode ? 'Modo Privacidad activado (cifras ocultas)' : 'Modo Privacidad desactivado', 'info');
-      refreshAll();
-    }
-
-    function toggleMobileSidebar(open) {
-      const sb = document.getElementById('sidebar');
-      const ov = document.getElementById('mobileOverlay');
-      if (open) {
-        sb.classList.remove('-translate-x-full');
-        ov.classList.remove('hidden');
-      } else {
-        sb.classList.add('-translate-x-full');
-        ov.classList.add('hidden');
-      }
-    }
-
-    function switchTab(tab) {
-      activeTab = tab;
-      toggleMobileSidebar(false);
-      const views = ['dashboard', 'calendar', 'trades', 'analytics', 'whatif', 'accounts'];
-      views.forEach(v => {
-        const el = document.getElementById(`view_${v}`);
-        if (el) el.classList.toggle('hidden', v !== tab);
-      });
-
-      document.querySelectorAll('.nav-btn').forEach(btn => {
-        const isCurrent = btn.getAttribute('data-tab') === tab;
-        btn.className = isCurrent
-          ? 'nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400 transition'
-          : 'nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800/70 transition';
-      });
-
-      renderActiveView();
-      lucide.createIcons();
-    }
-
-    function updateHeaderAndSidebarUI() {
-      const acc = getActiveAccount();
-      // Selector de cuenta
-      const sel = document.getElementById('accountSelector');
-      sel.innerHTML = state.accounts.map(a =>
-        `<option value="${a.id}" ${a.id === acc.id ? 'selected' : ''}>${a.name} (${a.currency}${a.initialBalance.toLocaleString()})</option>`
-      ).join('');
-
-      // Botones modo $/€, %, R
-      ['currency', 'percent', 'rmultiple'].forEach(m => {
-        const btn = document.getElementById(`modeBtn_${m}`);
-        if (!btn) return;
-        if (state.settings.displayMode === m) {
-          btn.className = 'px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-xs transition';
-        } else {
-          btn.className = 'px-2.5 py-1 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition';
-        }
-      });
-
-      // Icono privacidad
-      const pIcon = document.getElementById('privacyIcon');
-      const pBtn = document.getElementById('privacyBtn');
-      pIcon.setAttribute('d
+renderAll();
+</script>
+</body>
+</html>
