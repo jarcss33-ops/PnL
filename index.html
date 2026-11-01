@@ -46,8 +46,8 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
   <button onclick="showTab('trades')" id="t-trades" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">📝 Operaciones</button>
   <button onclick="showTab('analytics')" id="t-analytics" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">🔬 MAE/MFE & Sesiones</button>
   <button onclick="showTab('sim')" id="t-sim" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap">⚡ Simulador What-If</button>
+  <button onclick="showTab('import')" id="t-import" class="px-3 py-1.5 rounded-lg bg-emerald-900/80 text-emerald-100 whitespace-nowrap">📥 Centro de Importación</button>
   <button onclick="exportData()" class="px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap ml-auto">💾 Exportar</button>
-  <label class="px-3 py-1.5 rounded-lg bg-emerald-800/80 text-emerald-100 whitespace-nowrap cursor-pointer" title="Sube tu Excel, CSV o JSON">📊 Importar Excel/JSON<input type="file" accept=".json,.xlsx,.xls,.csv" onchange="importFile(event)" class="hidden"></label>
 </nav>
 
 <main class="max-w-7xl mx-auto p-3 space-y-4">
@@ -134,6 +134,43 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
       </div>
       <div id="simStats" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2"></div>
       <div class="h-64 pt-2"><canvas id="simChart"></canvas></div>
+    </div>
+  </section>
+
+  <!-- TAB 6: CENTRO DE IMPORTACIÓN UNIVERSAL -->
+  <section id="v-import" class="hidden space-y-4">
+    <div class="card p-4 space-y-4 text-xs">
+      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación Universal</h3>
+      <p class="text-slate-400">Elige cualquiera de los siguientes métodos para volcar tus datos en la aplicación:</p>
+      
+      <!-- Método 1: Archivos -->
+      <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
+        <div class="font-bold text-white">1. Subir Archivo (Excel, CSV, JSON)</div>
+        <label class="inline-block px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded cursor-pointer">
+          📂 Seleccionar Archivo
+          <input type="file" accept=".json,.xlsx,.xls,.csv" onchange="importFile(event)" class="hidden">
+        </label>
+      </div>
+
+      <!-- Método 2: Pegado de Texto / JSON / CSV -->
+      <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
+        <div class="font-bold text-white">2. Pegar Texto o Datos Directos (JSON / CSV / Fechas)</div>
+        <textarea id="importTextArea" rows="6" class="inp font-mono text-[11px]" placeholder="Pega aquí el contenido JSON o filas de datos (Ej: 2026-10-14, Miércoles, 0.57, Ganancia)..."></textarea>
+        <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar y Cargar Datos Pegados</button>
+      </div>
+
+      <!-- Método 3: Adjuntar Captura -->
+      <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
+        <div class="font-bold text-white">3. Registrar Trade con Captura de Pantalla</div>
+        <div class="flex items-center gap-3">
+          <label class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded border border-slate-700 cursor-pointer">
+            📷 Subir Captura
+            <input type="file" accept="image/*" onchange="importScreenshot(event)" class="hidden">
+          </label>
+          <span id="importImgStatus" class="text-slate-400">Ninguna imagen seleccionada</span>
+        </div>
+        <div id="importImgContainer" class="hidden mt-2"><img id="importImgPreview" class="max-h-40 rounded border border-slate-700"></div>
+      </div>
     </div>
   </section>
 </main>
@@ -228,7 +265,7 @@ function fmt(v,acc=curAcc()){
 }
 
 function showTab(id){
-  ['dash','cal','trades','analytics','sim'].forEach(t=>{
+  ['dash','cal','trades','analytics','sim','import'].forEach(t=>{
     document.getElementById('v-'+t).classList.toggle('hidden',t!==id);
     document.getElementById('t-'+t).className=t===id?'px-3 py-1.5 rounded-lg tab-active whitespace-nowrap':'px-3 py-1.5 rounded-lg bg-slate-800/70 whitespace-nowrap';
   });
@@ -454,6 +491,80 @@ function previewImg(e){
   reader.readAsDataURL(f);
 }
 
+function importScreenshot(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const b64=ev.target.result;
+    document.getElementById('importImgPreview').src=b64;
+    document.getElementById('importImgContainer').classList.remove('hidden');
+    document.getElementById('importImgStatus').textContent='Captura lista para asociar';
+    // Crear un trade rápido con la captura adjunta
+    state.trades.push({
+      id:'imp_img_'+Date.now(),
+      acc:curAcc().id,
+      date:new Date().toISOString().slice(0,16),
+      sym:'XAUUSD',
+      side:'LONG',
+      size:1,entry:0,exit:0,
+      gross:0,fee:0,risk:50,
+      ses:'Londres',setup:'Captura Importada',err:'',mae:0,mfe:0,emo:'Disciplinado',
+      notes:'Trade importado mediante captura de pantalla',
+      img:b64
+    });
+    save();renderAll();
+    alert('¡Captura importada y convertida en registro correctamente!');
+  };
+  reader.readAsDataURL(f);
+}
+
+function importFromText(){
+  const txt=document.getElementById('importTextArea').value.trim();
+  if(!txt){alert('El cuadro de texto está vacío');return;}
+  try {
+    // Intentar primero si es JSON válido
+    if(txt.startsWith('{')||txt.startsWith('[')){
+      const parsed=JSON.parse(txt);
+      if(parsed.trades){state=parsed;}
+      else if(Array.isArray(parsed)){state.trades=parsed;}
+      save();renderAll();
+      alert('¡JSON procesado y cargado con éxito desde el texto!');
+      return;
+    }
+    // Si no es JSON, procesar línea por línea (CSV / formato libre)
+    const lines=txt.split('\n');
+    let added=0;
+    lines.forEach((line, idx)=>{
+      const parts=line.split(/[\t,;|]/).map(p=>p.trim());
+      // Buscar una fecha YYYY-MM-DD y un número que sea el P&L
+      let foundDate='', foundVal=0;
+      parts.forEach(p=>{
+        if(p.match(/^\d{4}-\d{2}-\d{2}$/)) foundDate=p;
+        const num=parseFloat(p.replace('€','').replace('$',''));
+        if(!isNaN(num)&&num!==0 && !p.match(/^\d{4}$/)) foundVal=num;
+      });
+      if(foundDate){
+        state.trades.push({
+          id:'imp_txt_'+Date.now()+'_'+idx,
+          acc:curAcc().id,
+          date:foundDate+'T10:00',
+          sym:'XAUUSD',
+          side:foundVal>=0?'LONG':'SHORT',
+          size:1,entry:0,exit:0,
+          gross:foundVal,fee:0,risk:50,
+          ses:'Londres',setup:'Importado por Texto',err:'',mae:0,mfe:0,emo:'Disciplinado',
+          notes:'Cargado desde texto plano',img:''
+        });
+        added++;
+      }
+    });
+    save();renderAll();
+    alert(`¡Se han importado ${added} registros correctamente desde el texto pegado!`);
+  } catch(err){
+    alert('Error al procesar el texto: '+err.message);
+  }
+}
+
 function saveTrade(){
   const id=document.getElementById('tId').value||'tr_'+Date.now();
   const obj={
@@ -535,7 +646,6 @@ function importFile(e){
         jsonRows.forEach((row, idx)=>{
           if(!row||row.length<3)return;
           const dateStr=String(row[0]||'').trim();
-          // Verificar si row[0] tiene formato de fecha (YYYY-MM-DD)
           if(dateStr.match(/^\d{4}-\d{2}-\d{2}$/)){
             const profit=parseFloat(row[2]);
             if(!isNaN(profit)){
@@ -545,19 +655,19 @@ function importFile(e){
                 date:dateStr+'T10:00',
                 sym:'XAUUSD',
                 side:profit>=0?'LONG':'SHORT',
-                size:1,
-                entry:0,exit:0,
+                size:1,entry:0,exit:0,
                 gross:profit,fee:0,risk:50,
-                ses:'Londres',setup:'Cierre Diario Octubre',err:'',mae:0,mfe:0,emo:'Disciplinado',notes:'Importado desde Excel de Octubre',img:''
+                ses:'Londres',setup:'Cierre Diario',err:'',mae:0,mfe:0,emo:'Disciplinado',
+                notes:'Importado desde archivo',img:''
               });
               added++;
             }
           }
         });
         save();renderAll();
-        alert(`¡Se han importado ${added} días con éxito desde el Excel!`);
+        alert(`¡Se han importado ${added} días con éxito desde el archivo!`);
       }catch(err){
-        alert('Error al procesar el archivo Excel: ' + err.message);
+        alert('Error al procesar el archivo: ' + err.message);
       }
     };
     reader.readAsArrayBuffer(f);
