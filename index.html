@@ -14,6 +14,9 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- Librería Tesseract.js para OCR automático de capturas -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
 <style>
 body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif}
 .card{background:#131b2e;border:1px solid #1e293b;border-radius:.75rem}
@@ -147,10 +150,10 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
     </div>
   </section>
 
-  <!-- TAB 6: CENTRO DE IMPORTACIÓN v5.0 -->
+  <!-- TAB 6: CENTRO DE IMPORTACIÓN OCR -->
   <section id="v-import" class="hidden space-y-4">
     <div class="card p-4 space-y-4 text-xs">
-      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación v5.0</h3>
+      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación con OCR Inteligente</h3>
       
       <!-- Método 1: Archivos -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
@@ -164,20 +167,20 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
       <!-- Método 2: Pegado de Texto -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
         <div class="font-bold text-white">2. Pegado de Texto / Historial (Buy / Sell)</div>
-        <textarea id="importTextArea" rows="5" class="inp font-mono text-[11px]" placeholder="Pega aquí tu historial o déjalo vacío si solo subes captura..."></textarea>
+        <textarea id="importTextArea" rows="5" class="inp font-mono text-[11px]" placeholder="Pega aquí tu historial..."></textarea>
         <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar Texto</button>
       </div>
 
-      <!-- Método 3: Captura de Pantalla Independiente -->
+      <!-- Método 3: Captura de Pantalla con OCR Automático -->
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">3. Registrar mediante Captura de Pantalla</div>
-        <p class="text-slate-400">Sube cualquier captura. Cada imagen se procesará de forma totalmente independiente como un nuevo registro visual.</p>
+        <div class="font-bold text-white">3. Escanear Captura de Pantalla automáticamente (OCR)</div>
+        <p class="text-slate-400">Sube una captura de tu historial de MetaTrader. La aplicación leerá los textos de la imagen y extraerá los trades de forma autónoma.</p>
         <div class="flex items-center gap-3">
-          <label class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded border border-slate-700 cursor-pointer">
-            📷 Subir Captura
-            <input type="file" id="importImgInput" accept="image/*" onchange="importScreenshot(event)" class="hidden">
+          <label class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded cursor-pointer">
+            📷 Escanear Captura (OCR)
+            <input type="file" id="importImgInput" accept="image/*" onchange="importScreenshotOCR(event)" class="hidden">
           </label>
-          <span id="importImgStatus" class="text-slate-400">Ninguna imagen seleccionada</span>
+          <span id="ocrStatus" class="text-slate-400 font-semibold">Listo para escanear</span>
         </div>
       </div>
     </div>
@@ -269,7 +272,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
 </div>
 
 <script>
-const KEY='pnl_ledger_pro_v5_0';
+const KEY='pnl_ledger_pro_v5_1';
 let state=JSON.parse(localStorage.getItem(KEY))||{
   unit:'$',priv:false,activeAcc:'acc1',calDate:new Date().toISOString().slice(0,7),
   accounts:[
@@ -571,7 +574,8 @@ function previewImg(e){
   });
 }
 
-function parseStrictText(rawText, imgB64 = '') {
+// MOTOR DE PROCESADO OCR AUTOMÁTICO DESDE CAPTURA
+function parseOCRText(rawText, imgB64 = '') {
   const lines = rawText.split('\n');
   let added = 0;
   let currentSym = 'XAUUSD';
@@ -582,27 +586,34 @@ function parseStrictText(rawText, imgB64 = '') {
     const clean = line.trim();
     if(!clean) return;
     const lower = clean.toLowerCase();
-    if(lower.includes('buy') || lower.includes('sell')) {
+    
+    // Detectar activo y dirección (Buy/Sell)
+    if(lower.includes('buy') || lower.includes('sell') || lower.includes('compra') || lower.includes('venta')) {
       const parts = clean.split(',');
-      if(parts[0]) currentSym = parts[0].trim().toUpperCase();
-      currentSide = lower.includes('buy') ? 'LONG' : 'SHORT';
-      const lotMatch = clean.match(/(buy|sell)\s+([\d.]+)/i);
-      if(lotMatch) currentLot = parseFloat(lotMatch[2]) || 0.02;
+      if(parts[0]) currentSym = parts[0].trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+      if(!currentSym || currentSym.length < 3) currentSym = 'XAUUSD';
+      
+      currentSide = (lower.includes('buy') || lower.includes('compra')) ? 'LONG' : 'SHORT';
+      const lotMatch = clean.match(/([\d.]+\d)/);
+      if(lotMatch) currentLot = parseFloat(lotMatch[1]) || 0.02;
       return;
     }
 
-    if(clean.includes('→') || clean.includes('-') || clean.includes('+')) {
+    // Detectar líneas con números, precios o resultados en dinero
+    if(clean.includes('→') || clean.includes('-') || clean.includes('+') || /\d+[.,]\d+/.test(clean)) {
       const arrowParts = clean.split('→');
       let entry = 0, exit = 0;
       if(arrowParts.length >= 2) {
         entry = parseFloat(arrowParts[0].replace(/\s+/g, '').replace(',', '.')) || 0;
         exit = parseFloat(arrowParts[1].replace(/[^\d.]/g, '')) || 0;
       }
+      
       const dateMatch = clean.match(/(\d{4})[./](\d{2})[./](\d{2})\s+(\d{2}:\d{2}:\d{2})/);
       let dateStr = new Date().toISOString().slice(0,16);
       if(dateMatch) {
         dateStr = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}T${dateMatch[4].slice(0,5)}`;
       }
+
       const nums = clean.match(/[-+]?\d+([.,]\d+)?/g);
       let pnl = 0;
       if(nums && nums.length > 0) {
@@ -610,7 +621,7 @@ function parseStrictText(rawText, imgB64 = '') {
       }
 
       state.trades.push({
-        id: 'strict_' + Date.now() + '_' + idx,
+        id: 'ocr_' + Date.now() + '_' + idx,
         acc: curAcc().id,
         date: dateStr,
         sym: currentSym,
@@ -622,12 +633,12 @@ function parseStrictText(rawText, imgB64 = '') {
         fee: 0,
         risk: 50,
         ses: 'Londres',
-        setup: 'Importado Texto',
+        setup: 'OCR Automático',
         err: '',
         mae: 0,
         mfe: 0,
         emo: 'Disciplinado',
-        notes: 'Operación importada',
+        notes: 'Extraído automáticamente por OCR',
         img: imgB64
       });
       added++;
@@ -636,43 +647,35 @@ function parseStrictText(rawText, imgB64 = '') {
   return added;
 }
 
-function importScreenshot(e){
-  const f=e.target.files[0];if(!f)return;
-  compressImage(f, b64 => {
-    const customText = document.getElementById('importTextArea').value.trim();
-    
-    if(!customText) {
-      state.trades.push({
-        id: 'img_only_' + Date.now(),
-        acc: curAcc().id,
-        date: new Date().toISOString().slice(0,16),
-        sym: 'XAUUSD',
-        side: 'LONG',
-        size: 0.02,
-        entry: 0,
-        exit: 0,
-        gross: 0,
-        fee: 0,
-        risk: 50,
-        ses: 'Londres',
-        setup: 'Captura Visual',
-        err: '',
-        mae: 0,
-        mfe: 0,
-        emo: 'Disciplinado',
-        notes: 'Registro creado desde captura',
-        img: b64
-      });
+function importScreenshotOCR(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const statusEl = document.getElementById('ocrStatus');
+  statusEl.textContent = '⏳ Analizando imagen (OCR)...';
+  statusEl.className = 'text-amber-400 font-semibold';
+
+  compressImage(file, b64 => {
+    // Usamos Tesseract para leer el texto de la imagen en español e inglés
+    Tesseract.recognize(
+      b64,
+      'eng+spa',
+      { logger: m => { if(m.status==='recognizing text') statusEl.textContent = `⏳ Escaneando: ${Math.round(m.progress * 100)}%`; } }
+    ).then(({ data: { text } }) => {
+      console.log("Texto OCR detectado:", text);
+      const added = parseOCRText(text, b64);
       save(); renderAll();
+      
       document.getElementById('importImgInput').value = '';
-      alert('¡Captura adjuntada y guardada como nuevo registro limpio!');
-      return;
-    }
-    
-    const added = parseStrictText(customText, b64);
-    save(); renderAll();
-    document.getElementById('importImgInput').value = '';
-    alert(`¡Captura procesada con éxito! Se han importado ${added} operaciones asociadas.`);
+      statusEl.textContent = '✅ ¡Escaneo completado!';
+      statusEl.className = 'text-emerald-400 font-semibold';
+      
+      alert(`¡OCR finalizado! Se han extraído e importado ${added} operaciones automáticamente de la captura.`);
+    }).catch(err => {
+      statusEl.textContent = '❌ Error en OCR';
+      statusEl.className = 'text-rose-400 font-semibold';
+      alert('Error al escanear la imagen: ' + err.message);
+    });
   });
 }
 
@@ -688,7 +691,7 @@ function importFromText(){
       alert('¡JSON procesado y cargado con éxito!');
       return;
     }
-    const added = parseStrictText(txt);
+    const added = parseOCRText(txt);
     save();renderAll();
     alert(`¡Se han procesado e importado ${added} operaciones desde el texto!`);
   } catch(err){
