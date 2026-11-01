@@ -6,7 +6,6 @@
 <title>PnL Ledger Pro</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<!-- Librería SheetJS para leer archivos Excel (.xlsx/.xls) y CSV directamente en el navegador -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif}
@@ -502,9 +501,17 @@ function createNewAcc(){
 function closeModal(id){document.getElementById(id).classList.add('hidden');}
 
 function exportData(){
-  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='pnl_ledger_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  try {
+    const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(state,null,2));
+    const a=document.createElement('a');
+    a.href=dataStr;
+    a.download='pnl_ledger_backup_'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch(e) {
+    alert('Error al exportar: ' + e.message);
+  }
 }
 
 function importFile(e){
@@ -524,11 +531,9 @@ function importFile(e){
         const worksheet=workbook.Sheets[firstSheetName];
         const jsonRows=XLSX.utils.sheet_to_json(worksheet,{header:1});
         
-        // Parse rows and convert to trades
         let added=0;
         jsonRows.slice(1).forEach((row, idx)=>{
           if(!row||row.length===0)return;
-          // Look for potential columns in broker export
           const dateStr=String(row[0]||new Date().toISOString().slice(0,10));
           const sym=String(row[3]||row[1]||'XAUUSD').toUpperCase();
           const profit=parseFloat(row[5]||row[7]||0);
