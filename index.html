@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>PnL Ledger Pro v7.1</title>
+<title>PnL Ledger Pro v7.2</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b0f19">
@@ -36,7 +36,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
   <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
     <div class="flex items-center gap-2">
       <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white">P&L</div>
-      <span class="font-bold text-base tracking-tight hidden sm:inline">PnL Ledger <span class="text-blue-400">Pro v7.1</span></span>
+      <span class="font-bold text-base tracking-tight hidden sm:inline">PnL Ledger <span class="text-blue-400">Pro v7.2</span></span>
       <select id="accSelect" onchange="changeAcc()" class="inp !w-auto !py-1 font-semibold text-xs sm:text-sm"></select>
       <button onclick="openAccModal()" class="px-2 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded border border-slate-700" title="Gestionar Cuentas">⚙️</button>
     </div>
@@ -142,11 +142,6 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
       <div class="overflow-x-auto">
         <div id="heatmapGrid" class="min-w-[700px]"></div>
       </div>
-      <div class="flex justify-center gap-4 mt-3 text-[10px] text-slate-400">
-        <span class="flex items-center gap-1"><div class="w-3 h-3 bg-rose-600 rounded-sm"></div> Pérdida Fuerte</span>
-        <span class="flex items-center gap-1"><div class="w-3 h-3 bg-slate-800 rounded-sm"></div> Neutro / Sin trades</span>
-        <span class="flex items-center gap-1"><div class="w-3 h-3 bg-emerald-600 rounded-sm"></div> Ganancia Fuerte</span>
-      </div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="card p-3"><h3 class="text-xs font-semibold text-slate-400 uppercase mb-2">P&L por Estrategia (SMC)</h3><div class="h-56"><canvas id="setupChart"></canvas></div></div>
@@ -159,7 +154,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
   <!-- TAB 5: SIMULADOR -->
   <section id="v-sim" class="hidden space-y-4">
     <div class="card p-4 space-y-3">
-      <h3 class="font-bold text-sm text-blue-400">⚡ Simulador de Escenarios (¿Qué pasaría si...?)</h3>
+      <h3 class="font-bold text-sm text-blue-400">⚡ Simulador de Escenarios</h3>
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
         <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded border border-slate-800"><input type="checkbox" id="simNoErr" onchange="renderSim()"> Excluir trades con Errores</label>
         <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded border border-slate-800"><input type="checkbox" id="simNoFri" onchange="renderSim()"> No operar los Viernes</label>
@@ -174,7 +169,7 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
   <!-- TAB 6: CENTRO DE IMPORTACIÓN -->
   <section id="v-import" class="hidden space-y-4">
     <div class="card p-4 space-y-4 text-xs">
-      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación v7.1</h3>
+      <h3 class="font-bold text-sm text-emerald-400">📥 Centro de Importación v7.2</h3>
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
         <div class="font-bold text-white">1. Subir Archivo Compatible (.json, .xlsx, .csv)</div>
         <label class="inline-block px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded cursor-pointer">
@@ -184,11 +179,12 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
       </div>
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
         <div class="font-bold text-white">2. Pegado de Texto (Recomendado para MT5/cTrader)</div>
-        <textarea id="importTextArea" rows="6" class="inp font-mono text-[11px]" placeholder="Pega aquí tu historial de MetaTrader (Guardar como Informe)..."></textarea>
+        <textarea id="importTextArea" rows="6" class="inp font-mono text-[11px]" placeholder="Pega aquí tu historial de MetaTrader..."></textarea>
         <button onclick="importFromText()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded">⚡ Procesar Texto</button>
       </div>
       <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
-        <div class="font-bold text-white">3. Escanear Captura de Pantalla (OCR)</div>
+        <div class="font-bold text-white">3. Escanear Captura (OCR Mejorado)</div>
+        <p class="text-slate-400">El nuevo motor pre-procesa la imagen (alto contraste) para poder leer fondos oscuros (modo noche).</p>
         <div class="flex items-center gap-3">
           <label class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded cursor-pointer">
             📷 Escanear Captura
@@ -302,7 +298,6 @@ body{background:#0b0f19;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
         <div><label class="text-slate-400">Balance Inicial</label><input type="number" id="aBal" class="inp"></div>
         <div><label class="text-slate-400">Moneda</label><select id="aCur" class="inp"><option value="$">$ USD</option><option value="€">€ EUR</option></select></div>
       </div>
-      <!-- Campos exclusivos de Fondeo -->
       <div id="propRulesFields" class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800">
         <div><label class="text-slate-400">Objetivo Profit ($)</label><input type="number" id="aTarget" class="inp"></div>
         <div><label class="text-slate-400">Pérdida Diaria Máx ($)</label><input type="number" id="aDaily" class="inp"></div>
@@ -368,10 +363,8 @@ async function bootstrap() {
   
   if (!dbState) {
     const lsState = localStorage.getItem(LEGACY_KEY);
-    if (lsState) {
-      dbState = JSON.parse(lsState);
-      localStorage.removeItem(LEGACY_KEY);
-    } else {
+    if (lsState) { dbState = JSON.parse(lsState); localStorage.removeItem(LEGACY_KEY); } 
+    else {
       dbState = {
         unit: '$', priv: false, activeAcc: 'acc1', calDate: new Date().toISOString().slice(0,7),
         accounts: [{id: 'acc1', name: 'Mi Cuenta Fondeo', type: 'Fondeo', bal: 10000, cur: '$', target: 1500, daily: 300, maxdd: 1000}],
@@ -381,9 +374,7 @@ async function bootstrap() {
     await idb.put('main', dbState);
   }
   
-  // Asegurar que las cuentas antiguas tengan tipo (retrocompatibilidad)
   dbState.accounts.forEach(a => { if(!a.type) a.type = 'Fondeo'; });
-  
   state = dbState;
   ['$','%','R'].forEach(x => { const el = document.getElementById('u-'+x); if(el) el.classList.toggle('tab-active', x === state.unit); });
   renderAll();
@@ -496,14 +487,7 @@ function calcStats(list, acc) {
 function drawChart(id, type, data, opts={}) {
   const el = document.getElementById(id); if(!el) return;
   if(charts[id]) charts[id].destroy();
-  charts[id] = new Chart(el, {
-    type, data, 
-    options: {
-      responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-      scales: { x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } }, y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } } },
-      ...opts
-    }
-  });
+  charts[id] = new Chart(el, { type, data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } }, y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } } }, ...opts } });
 }
 function moveMonth(d) {
   const [y,m] = state.calDate.split('-').map(Number);
@@ -511,10 +495,7 @@ function moveMonth(d) {
   state.calDate = nd.getFullYear() + '-' + String(nd.getMonth()+1).padStart(2,'0');
   save(); renderAll();
 }
-function toggleAccordion(id) {
-  const content = document.getElementById('acc-' + id);
-  if(content) content.classList.toggle('open');
-}
+function toggleAccordion(id) { const content = document.getElementById('acc-' + id); if(content) content.classList.toggle('open'); }
 
 /* =========================================
    RENDERIZADOS PRINCIPALES
@@ -527,7 +508,6 @@ function renderAll() {
   const allAccTrades = state.trades.filter(t => t.acc === acc.id).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const st = calcStats(allAccTrades, acc);
 
-  // Racha
   let streak=0;
   if(allAccTrades.length > 0) {
     let isWin = net(allAccTrades[allAccTrades.length-1]) >= 0;
@@ -536,16 +516,11 @@ function renderAll() {
     document.getElementById('streakCard').innerHTML = `<div class="text-slate-400">Racha Actual</div><div class="font-bold text-sm ${color} mt-1">${isWin?'🔥 Ganadora':'⚠️ Perdedora'} (${streak})</div>`;
   } else { document.getElementById('streakCard').innerHTML = `<div class="text-slate-400">Sin racha</div><div class="font-bold text-sm">0 trades</div>`; }
 
-  // Dashboard Props vs Live
   const propRulesContainer = document.getElementById('propRules');
   if(acc.type === 'Live') {
     const pnlPerc = (st.total / acc.bal) * 100;
     const colorClass = st.total >= 0 ? 'text-emerald-400' : 'text-rose-400';
-    propRulesContainer.innerHTML = `
-      <div class="col-span-1 sm:col-span-3 text-center py-2 bg-slate-900 rounded border border-slate-800">
-        <span class="text-slate-400">Crecimiento Cuenta Live:</span> 
-        <span class="font-bold text-lg ml-2 ${colorClass}">${fmt(st.total, acc)} (${pnlPerc.toFixed(2)}%)</span>
-      </div>`;
+    propRulesContainer.innerHTML = `<div class="col-span-1 sm:col-span-3 text-center py-2 bg-slate-900 rounded border border-slate-800"><span class="text-slate-400">Crecimiento Cuenta Live:</span> <span class="font-bold text-lg ml-2 ${colorClass}">${fmt(st.total, acc)} (${pnlPerc.toFixed(2)}%)</span></div>`;
   } else {
     const today = new Date().toLocaleDateString('en-CA');
     const todayLoss = Math.abs(Math.min(0, allAccTrades.filter(t => t.date.startsWith(today)).reduce((a,b) => a+net(b), 0)));
@@ -582,20 +557,12 @@ function renderCalendar(trades, acc) {
   const [y,m] = state.calDate.split('-').map(Number);
   const dt = new Date(y, m-1, 1);
   document.getElementById('calTitle').textContent = dt.toLocaleDateString('es-ES', {month:'long', year:'numeric'});
-  const daysInMonth = new Date(y, m, 0).getDate();
-  const startDay = (dt.getDay()+6)%7;
-  const byDay = {};
-  trades.filter(t => t.date.startsWith(state.calDate)).forEach(t => {
-    const d = +t.date.slice(8,10);
-    byDay[d] = byDay[d] || {pnl:0, cnt:0};
-    byDay[d].pnl += net(t); byDay[d].cnt++;
-  });
-  let html = '';
-  for(let i=0; i<startDay; i++) html += '<div class="h-16 sm:h-20 bg-slate-900/30 rounded"></div>';
+  const daysInMonth = new Date(y, m, 0).getDate(), startDay = (dt.getDay()+6)%7, byDay = {};
+  trades.filter(t => t.date.startsWith(state.calDate)).forEach(t => { const d = +t.date.slice(8,10); byDay[d] = byDay[d] || {pnl:0, cnt:0}; byDay[d].pnl += net(t); byDay[d].cnt++; });
+  let html = ''; for(let i=0; i<startDay; i++) html += '<div class="h-16 sm:h-20 bg-slate-900/30 rounded"></div>';
   let weeks = [], wPnl = 0, wCnt = 0;
   for(let d=1; d<=daysInMonth; d++) {
-    const info = byDay[d];
-    const cls = info ? (info.pnl>=0 ? 'bg-emerald-950/70 border-emerald-700/60 text-emerald-300' : 'bg-rose-950/70 border-rose-700/60 text-rose-300') : 'bg-slate-900/60 border-slate-800 text-slate-500';
+    const info = byDay[d]; const cls = info ? (info.pnl>=0 ? 'bg-emerald-950/70 border-emerald-700/60 text-emerald-300' : 'bg-rose-950/70 border-rose-700/60 text-rose-300') : 'bg-slate-900/60 border-slate-800 text-slate-500';
     if(info) { wPnl += info.pnl; wCnt += info.cnt; }
     const dateStr = `${state.calDate}-${String(d).padStart(2,'0')}`;
     html += `<div onclick="openTradeModal('${dateStr}')" class="h-16 sm:h-20 p-1.5 rounded border ${cls} flex flex-col justify-between cursor-pointer hover:brightness-125">
@@ -613,19 +580,9 @@ function renderTradesTable(list, acc) {
   if(list.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="p-6 text-center text-slate-500">Sin operaciones registradas</td></tr>'; return; }
   let html = '';
   list.forEach(t => {
-    const n = net(t);
-    let avgExit = getAvgExit(t);
-    let r = '-';
-    if(t.sl && t.entry && avgExit) {
-      let slDist = Math.abs(t.entry - t.sl);
-      if(slDist > 0) {
-        let wonDist = t.side==='LONG' ? avgExit - t.entry : t.entry - avgExit;
-        r = (wonDist/slDist).toFixed(2)+'R';
-      }
-    } else if(t.risk) { r = (n/t.risk).toFixed(2)+'R'; }
-    const pips = calcPips(t.sym, t.side, t.entry, t);
-    const hasImage = !!t.img;
-    const isMultiExit = t.exits && t.exits.length > 1;
+    const n = net(t); let avgExit = getAvgExit(t); let r = '-';
+    if(t.sl && t.entry && avgExit) { let slDist = Math.abs(t.entry - t.sl); if(slDist > 0) { let wonDist = t.side==='LONG' ? avgExit - t.entry : t.entry - avgExit; r = (wonDist/slDist).toFixed(2)+'R'; } } else if(t.risk) { r = (n/t.risk).toFixed(2)+'R'; }
+    const pips = calcPips(t.sym, t.side, t.entry, t), hasImage = !!t.img, isMultiExit = t.exits && t.exits.length > 1;
     html += `
       <tr class="hover:bg-slate-800/40 border-b border-slate-800/50" onclick="toggleAccordion('${t.id}')">
         <td class="p-2.5 whitespace-nowrap"><div class="font-medium flex items-center gap-1">${t.date.replace('T',' ')} <span class="text-[9px] bg-slate-700 px-1 rounded">▼</span></div><div class="text-[10px] text-slate-400">${t.ses||''}</div></td>
@@ -637,70 +594,34 @@ function renderTradesTable(list, acc) {
         <td class="p-2.5">${r}</td>
         <td class="p-2.5"><div class="text-[10px] truncate max-w-[120px]" title="${t.setup}">${t.setup||'-'}</div>${t.err?`<span class="text-[10px] text-rose-400">⚠ ${t.err}</span>`:''}</td>
         <td class="p-2.5 text-right font-bold ${n>=0?'text-emerald-400':'text-rose-400'}">${fmt(n,acc)}</td>
-        <td class="p-2.5 text-center whitespace-nowrap" onclick="event.stopPropagation()">
-          <button onclick="editTrade('${t.id}')" class="px-2 py-1 bg-slate-800 rounded mr-1">✏️</button>
-          <button onclick="delTrade('${t.id}')" class="px-2 py-1 bg-rose-950 text-rose-300 rounded">🗑️</button>
-        </td>
+        <td class="p-2.5 text-center whitespace-nowrap" onclick="event.stopPropagation()"><button onclick="editTrade('${t.id}')" class="px-2 py-1 bg-slate-800 rounded mr-1">✏️</button><button onclick="delTrade('${t.id}')" class="px-2 py-1 bg-rose-950 text-rose-300 rounded">🗑️</button></td>
       </tr>
-      <tr class="bg-slate-900/30">
-        <td colspan="10" class="p-0 border-0">
-          <div id="acc-${t.id}" class="accordion-content">
-            <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-800">
-              <div class="space-y-2">
-                <h4 class="text-xs font-bold text-blue-400">Contexto y Diario</h4>
-                <p class="text-xs text-slate-300 whitespace-pre-wrap bg-slate-900 p-2 rounded border border-slate-800 min-h-[60px]">${t.notes || 'Sin notas registradas.'}</p>
-                ${isMultiExit ? `<h4 class="text-xs font-bold text-slate-400 mt-2">Detalle de Salidas Parciales</h4><ul class="text-[11px] text-slate-400 space-y-1">${t.exits.map((ex,i) => `<li>TP${i+1}: Precio ${ex.price} (Lote: ${ex.lot})</li>`).join('')}</ul>` : ''}
-              </div>
-              <div class="flex items-center justify-center bg-slate-900 rounded border border-slate-800 overflow-hidden min-h-[120px]">
-                ${hasImage ? `<img src="${t.img}" class="max-w-full max-h-64 object-contain" alt="Chart">` : `<span class="text-slate-600 text-xs">Sin captura de gráfico</span>`}
-              </div>
-            </div>
-          </div>
-        </td>
-      </tr>`;
-  });
-  tbody.innerHTML = html;
+      <tr class="bg-slate-900/30"><td colspan="10" class="p-0 border-0"><div id="acc-${t.id}" class="accordion-content">
+        <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-800"><div class="space-y-2"><h4 class="text-xs font-bold text-blue-400">Contexto y Diario</h4><p class="text-xs text-slate-300 whitespace-pre-wrap bg-slate-900 p-2 rounded border border-slate-800 min-h-[60px]">${t.notes || 'Sin notas registradas.'}</p>${isMultiExit ? `<h4 class="text-xs font-bold text-slate-400 mt-2">Detalle de Salidas Parciales</h4><ul class="text-[11px] text-slate-400 space-y-1">${t.exits.map((ex,i) => `<li>TP${i+1}: Precio ${ex.price} (Lote: ${ex.lot})</li>`).join('')}</ul>` : ''}</div>
+        <div class="flex items-center justify-center bg-slate-900 rounded border border-slate-800 overflow-hidden min-h-[120px]">${hasImage ? `<img src="${t.img}" class="max-w-full max-h-64 object-contain" alt="Chart">` : `<span class="text-slate-600 text-xs">Sin captura de gráfico</span>`}</div></div></div></td></tr>`;
+  }); tbody.innerHTML = html;
 }
 
 function renderAnalytics(trades) {
-  const bySes={}, bySet={};
-  const hm = Array.from({length: 7}, () => Array(24).fill(0));
+  const bySes={}, bySet={}; const hm = Array.from({length: 7}, () => Array(24).fill(0));
   trades.forEach(t => {
-    const n = net(t);
-    bySes[t.ses||'Otra'] = (bySes[t.ses||'Otra']||0)+n;
-    const setups = t.setup ? t.setup.split(', ') : ['Sin Setup'];
-    setups.forEach(s => { if(s) bySet[s] = (bySet[s]||0)+n; });
-    if(t.date) {
-      const d = new Date(t.date);
-      let day = d.getDay(), hour = d.getHours();
-      let tableDay = day === 0 ? 6 : day - 1;
-      if(!isNaN(tableDay) && !isNaN(hour)) hm[tableDay][hour] += n;
-    }
+    const n = net(t); bySes[t.ses||'Otra'] = (bySes[t.ses||'Otra']||0)+n;
+    const setups = t.setup ? t.setup.split(', ') : ['Sin Setup']; setups.forEach(s => { if(s) bySet[s] = (bySet[s]||0)+n; });
+    if(t.date) { const d = new Date(t.date); let day = d.getDay(), hour = d.getHours(); let tableDay = day === 0 ? 6 : day - 1; if(!isNaN(tableDay) && !isNaN(hour)) hm[tableDay][hour] += n; }
   });
-
   const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   let hmHtml = '<div class="grid grid-cols-[30px_repeat(24,_1fr)] gap-0.5 text-[9px] text-center items-center"><div></div>';
   for(let h=0; h<24; h++) hmHtml += `<div class="text-slate-500 font-mono">${h}h</div>`;
-  let maxVal = 0, minVal = 0;
-  hm.flat().forEach(v => { if(v > maxVal) maxVal = v; if(v < minVal) minVal = v; });
+  let maxVal = 0, minVal = 0; hm.flat().forEach(v => { if(v > maxVal) maxVal = v; if(v < minVal) minVal = v; });
   for(let d=0; d<7; d++) {
     hmHtml += `<div class="text-slate-400 font-bold pr-1 text-right">${dayNames[d]}</div>`;
     for(let h=0; h<24; h++) {
-      const val = hm[d][h];
-      let bg = 'bg-slate-800';
-      if(val > 0) {
-        let intensity = maxVal > 0 ? (val / maxVal) : 0;
-        if(intensity > 0.8) bg = 'bg-emerald-500'; else if(intensity > 0.4) bg = 'bg-emerald-700'; else bg = 'bg-emerald-900';
-      } else if (val < 0) {
-        let intensity = minVal < 0 ? (val / minVal) : 0;
-        if(intensity > 0.8) bg = 'bg-rose-500'; else if(intensity > 0.4) bg = 'bg-rose-700'; else bg = 'bg-rose-900';
-      }
+      const val = hm[d][h]; let bg = 'bg-slate-800';
+      if(val > 0) { let intensity = maxVal > 0 ? (val / maxVal) : 0; if(intensity > 0.8) bg = 'bg-emerald-500'; else if(intensity > 0.4) bg = 'bg-emerald-700'; else bg = 'bg-emerald-900'; } 
+      else if (val < 0) { let intensity = minVal < 0 ? (val / minVal) : 0; if(intensity > 0.8) bg = 'bg-rose-500'; else if(intensity > 0.4) bg = 'bg-rose-700'; else bg = 'bg-rose-900'; }
       hmHtml += `<div class="h-6 w-full ${bg} rounded-sm hm-cell flex items-center justify-center text-[8px] text-white/50" title="${dayNames[d]} ${h}:00 - P&L: ${fmt(val)}">${val !== 0 ? '$' : ''}</div>`;
     }
-  }
-  hmHtml += '</div>';
-  document.getElementById('heatmapGrid').innerHTML = hmHtml;
-
+  } hmHtml += '</div>'; document.getElementById('heatmapGrid').innerHTML = hmHtml;
   drawChart('sesChart','bar',{labels:Object.keys(bySes),datasets:[{data:Object.values(bySes),backgroundColor:Object.values(bySes).map(v=>v>=0?'#10b981':'#f43f5e')}]});
   drawChart('setupChart','bar',{labels:Object.keys(bySet),datasets:[{data:Object.values(bySet),backgroundColor:'#3b82f6'}]});
   drawChart('maeChart','scatter',{datasets:[{label:'MAE vs PnL',data:trades.map(t=>({x:+(t.mae||0),y:net(t)})),backgroundColor:'#f43f5e'}]});
@@ -708,18 +629,11 @@ function renderAnalytics(trades) {
 }
 
 function renderSim() {
-  const acc = curAcc();
-  const base = state.trades.filter(t => t.acc === acc.id).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const acc = curAcc(); const base = state.trades.filter(t => t.acc === acc.id).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const noErr = document.getElementById('simNoErr')?.checked, noFri = document.getElementById('simNoFri')?.checked;
   const ses = document.getElementById('simSes')?.value, cap = +document.getElementById('simCap')?.value||0;
-  const simList = base.filter(t => {
-    if(noErr && t.err) return false;
-    if(noFri && new Date(t.date).getDay() === 5) return false;
-    if(ses && t.ses !== ses) return false;
-    return true;
-  }).map(t => { const n = net(t); if(cap > 0 && n < -cap) return {...t, gross: -cap, fee: 0}; return t; });
-  const sReal = calcStats(base, acc), sSim = calcStats(simList, acc);
-  const diff = sSim.total - sReal.total;
+  const simList = base.filter(t => { if(noErr && t.err) return false; if(noFri && new Date(t.date).getDay() === 5) return false; if(ses && t.ses !== ses) return false; return true; }).map(t => { const n = net(t); if(cap > 0 && n < -cap) return {...t, gross: -cap, fee: 0}; return t; });
+  const sReal = calcStats(base, acc), sSim = calcStats(simList, acc); const diff = sSim.total - sReal.total;
   document.getElementById('simStats').innerHTML = `
     <div class="p-2.5 bg-slate-900 rounded border border-slate-800"><div class="text-slate-400 text-[11px]">P&L Real</div><div class="font-bold text-sm">${fmt(sReal.total,acc)}</div></div>
     <div class="p-2.5 bg-slate-900 rounded border border-slate-800"><div class="text-slate-400 text-[11px]">P&L Simulado</div><div class="font-bold text-sm text-blue-400">${fmt(sSim.total,acc)}</div></div>
@@ -729,19 +643,13 @@ function renderSim() {
 }
 
 /* =========================================
-   SISTEMA DE CIERRES PARCIALES & MODAL TRADE
+   MODAL TRADE
 ========================================= */
 let currentExits = [];
 function renderExitRows() {
   const container = document.getElementById('exitsContainer');
-  container.innerHTML = currentExits.map((ex, i) => `
-    <div class="flex gap-2 items-center bg-slate-800 p-1.5 rounded">
-      <span class="text-slate-400 text-[10px] w-6">TP${i+1}</span>
-      <input type="number" step="any" placeholder="Precio Salida" value="${ex.price||''}" onchange="updateExit(${i}, 'price', this.value)" class="inp !py-1 !text-xs">
-      <input type="number" step="any" placeholder="Lotes" value="${ex.lot||''}" onchange="updateExit(${i}, 'lot', this.value)" class="inp !py-1 !text-xs w-20">
-      <button onclick="removeExitRow(${i})" class="text-rose-400 hover:text-rose-300 font-bold px-1.5">✕</button>
-    </div>`).join('');
-  if(currentExits.length === 0) container.innerHTML = `<div class="text-slate-500 text-xs italic text-center p-1">No hay salidas registradas. Añade al menos una.</div>`;
+  container.innerHTML = currentExits.map((ex, i) => `<div class="flex gap-2 items-center bg-slate-800 p-1.5 rounded"><span class="text-slate-400 text-[10px] w-6">TP${i+1}</span><input type="number" step="any" placeholder="Precio Salida" value="${ex.price||''}" onchange="updateExit(${i}, 'price', this.value)" class="inp !py-1 !text-xs"><input type="number" step="any" placeholder="Lotes" value="${ex.lot||''}" onchange="updateExit(${i}, 'lot', this.value)" class="inp !py-1 !text-xs w-20"><button onclick="removeExitRow(${i})" class="text-rose-400 hover:text-rose-300 font-bold px-1.5">✕</button></div>`).join('');
+  if(currentExits.length === 0) container.innerHTML = `<div class="text-slate-500 text-xs italic text-center p-1">No hay salidas registradas.</div>`;
 }
 function addExitRow() { currentExits.push({price: '', lot: ''}); renderExitRows(); }
 function updateExit(idx, field, val) { currentExits[idx][field] = parseFloat(val) || ''; }
@@ -749,60 +657,32 @@ function removeExitRow(idx) { currentExits.splice(idx, 1); renderExitRows(); }
 
 function autoDetectSession() {
   const dateVal = document.getElementById('tDate').value; if(!dateVal) return;
-  const h = new Date(dateVal).getHours(); let ses = 'Asia';
-  if(h >= 8 && h < 14) ses = 'Londres'; else if(h >= 14 && h < 22) ses = 'Nueva York';
+  const h = new Date(dateVal).getHours(); let ses = 'Asia'; if(h >= 8 && h < 14) ses = 'Londres'; else if(h >= 14 && h < 22) ses = 'Nueva York';
   document.getElementById('tSes').value = ses;
 }
 
 function openTradeModal(datePref) {
-  document.getElementById('tmTitle').textContent = 'Registrar Operación'; document.getElementById('tId').value = '';
-  document.getElementById('tDate').value = (datePref ? datePref+'T10:00' : new Date().toISOString().slice(0,16));
-  ['tSym','tEntry','tSl','tGross','tMae','tMfe','tNotes','tImgBase64','tSetupOther'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('tFee').value = 0; document.getElementById('tSize').value = 1; document.getElementById('tRisk').value = 50; document.getElementById('tErr').value = '';
-  document.querySelectorAll('.setup-cb').forEach(cb => cb.checked = false);
-  currentExits = [{price: '', lot: 1}]; renderExitRows(); autoDetectSession();
-  document.getElementById('imgStatus').textContent='Ninguna imagen seleccionada'; document.getElementById('imgPreviewContainer').classList.add('hidden');
-  document.getElementById('modalImgInput').value=''; document.getElementById('tradeModal').classList.remove('hidden');
+  document.getElementById('tmTitle').textContent = 'Registrar Operación'; document.getElementById('tId').value = ''; document.getElementById('tDate').value = (datePref ? datePref+'T10:00' : new Date().toISOString().slice(0,16));
+  ['tSym','tEntry','tSl','tGross','tMae','tMfe','tNotes','tImgBase64','tSetupOther'].forEach(id => document.getElementById(id).value=''); document.getElementById('tFee').value = 0; document.getElementById('tSize').value = 1; document.getElementById('tRisk').value = 50; document.getElementById('tErr').value = '';
+  document.querySelectorAll('.setup-cb').forEach(cb => cb.checked = false); currentExits = [{price: '', lot: 1}]; renderExitRows(); autoDetectSession();
+  document.getElementById('imgStatus').textContent='Ninguna imagen'; document.getElementById('imgPreviewContainer').classList.add('hidden'); document.getElementById('modalImgInput').value=''; document.getElementById('tradeModal').classList.remove('hidden');
 }
 
 function editTrade(id) {
   const t = state.trades.find(x => x.id === id); if(!t) return;
-  document.getElementById('tmTitle').textContent = 'Editar Operación'; document.getElementById('tId').value = t.id;
-  document.getElementById('tDate').value = t.date; document.getElementById('tSym').value = t.sym;
-  document.getElementById('tSide').value = t.side; document.getElementById('tSize').value = t.size;
-  document.getElementById('tEntry').value = t.entry; document.getElementById('tSl').value = t.sl||'';
-  if(t.exits && Array.isArray(t.exits) && t.exits.length > 0) currentExits = JSON.parse(JSON.stringify(t.exits)); else currentExits = [{price: t.exit||'', lot: t.size||1}];
-  renderExitRows();
-  document.getElementById('tGross').value = t.gross; document.getElementById('tFee').value = t.fee;
-  document.getElementById('tRisk').value = t.risk; document.getElementById('tSes').value = t.ses;
-  document.getElementById('tErr').value = t.err||''; document.getElementById('tMae').value = t.mae;
-  document.getElementById('tMfe').value = t.mfe; document.getElementById('tNotes').value = t.notes;
-  document.getElementById('tImgBase64').value = t.img||'';
-  const setups = t.setup ? t.setup.split(', ') : [], predefined = ['FVG', 'Order Block', 'CHoCH', 'Liquidity Sweep', 'EMA 50/200'];
-  document.querySelectorAll('.setup-cb').forEach(cb => { cb.checked = setups.includes(cb.value); });
-  document.getElementById('tSetupOther').value = setups.filter(s => !predefined.includes(s) && s !== '').join(', ');
-  document.getElementById('modalImgInput').value='';
-  if(t.img) { document.getElementById('imgPreview').src = t.img; document.getElementById('imgPreviewContainer').classList.remove('hidden'); document.getElementById('imgStatus').textContent='Imagen cargada'; }
-  else { document.getElementById('imgPreviewContainer').classList.add('hidden'); document.getElementById('imgStatus').textContent='Ninguna imagen'; }
-  document.getElementById('tradeModal').classList.remove('hidden');
+  document.getElementById('tmTitle').textContent = 'Editar Operación'; document.getElementById('tId').value = t.id; document.getElementById('tDate').value = t.date; document.getElementById('tSym').value = t.sym; document.getElementById('tSide').value = t.side; document.getElementById('tSize').value = t.size; document.getElementById('tEntry').value = t.entry; document.getElementById('tSl').value = t.sl||'';
+  if(t.exits && Array.isArray(t.exits) && t.exits.length > 0) currentExits = JSON.parse(JSON.stringify(t.exits)); else currentExits = [{price: t.exit||'', lot: t.size||1}]; renderExitRows();
+  document.getElementById('tGross').value = t.gross; document.getElementById('tFee').value = t.fee; document.getElementById('tRisk').value = t.risk; document.getElementById('tSes').value = t.ses; document.getElementById('tErr').value = t.err||''; document.getElementById('tMae').value = t.mae; document.getElementById('tMfe').value = t.mfe; document.getElementById('tNotes').value = t.notes; document.getElementById('tImgBase64').value = t.img||'';
+  const setups = t.setup ? t.setup.split(', ') : [], predefined = ['FVG', 'Order Block', 'CHoCH', 'Liquidity Sweep', 'EMA 50/200']; document.querySelectorAll('.setup-cb').forEach(cb => { cb.checked = setups.includes(cb.value); }); document.getElementById('tSetupOther').value = setups.filter(s => !predefined.includes(s) && s !== '').join(', ');
+  document.getElementById('modalImgInput').value=''; if(t.img) { document.getElementById('imgPreview').src = t.img; document.getElementById('imgPreviewContainer').classList.remove('hidden'); document.getElementById('imgStatus').textContent='Imagen cargada'; } else { document.getElementById('imgPreviewContainer').classList.add('hidden'); document.getElementById('imgStatus').textContent='Ninguna imagen'; } document.getElementById('tradeModal').classList.remove('hidden');
 }
 
 async function saveTrade() {
-  const id = document.getElementById('tId').value || 'tr_' + Date.now();
-  const cbs = Array.from(document.querySelectorAll('.setup-cb:checked')).map(cb=>cb.value);
-  const other = document.getElementById('tSetupOther').value.trim(); if(other) cbs.push(other);
+  const id = document.getElementById('tId').value || 'tr_' + Date.now(), cbs = Array.from(document.querySelectorAll('.setup-cb:checked')).map(cb=>cb.value), other = document.getElementById('tSetupOther').value.trim(); if(other) cbs.push(other);
   const finalExits = currentExits.filter(ex => ex.price !== '' && ex.price !== null).map(ex => ({price: +ex.price, lot: +ex.lot||0}));
-  
   const obj = {
-    id, acc: curAcc().id, date: document.getElementById('tDate').value,
-    sym: (document.getElementById('tSym').value||'ACTIVO').toUpperCase(), side: document.getElementById('tSide').value, 
-    size: +document.getElementById('tSize').value || 1, entry: +document.getElementById('tEntry').value || 0,
-    sl: +document.getElementById('tSl').value || null, exits: finalExits, exit: null,
-    gross: +document.getElementById('tGross').value || 0, fee: +document.getElementById('tFee').value || 0,
-    risk: +document.getElementById('tRisk').value || 50, ses: document.getElementById('tSes').value,
-    setup: cbs.join(', '), err: document.getElementById('tErr').value,
-    mae: +document.getElementById('tMae').value || 0, mfe: +document.getElementById('tMfe').value || 0,
-    notes: document.getElementById('tNotes').value, img: document.getElementById('tImgBase64').value
+    id, acc: curAcc().id, date: document.getElementById('tDate').value, sym: (document.getElementById('tSym').value||'ACTIVO').toUpperCase(), side: document.getElementById('tSide').value, size: +document.getElementById('tSize').value || 1, entry: +document.getElementById('tEntry').value || 0, sl: +document.getElementById('tSl').value || null, exits: finalExits, exit: null,
+    gross: +document.getElementById('tGross').value || 0, fee: +document.getElementById('tFee').value || 0, risk: +document.getElementById('tRisk').value || 50, ses: document.getElementById('tSes').value, setup: cbs.join(', '), err: document.getElementById('tErr').value, mae: +document.getElementById('tMae').value || 0, mfe: +document.getElementById('tMfe').value || 0, notes: document.getElementById('tNotes').value, img: document.getElementById('tImgBase64').value
   };
   const idx = state.trades.findIndex(x => x.id === id); if(idx >= 0) state.trades[idx] = obj; else state.trades.push(obj);
   await save(); closeModal('tradeModal'); renderAll();
@@ -811,7 +691,7 @@ async function saveTrade() {
 async function delTrade(id) { if(confirm('¿Eliminar esta operación?')) { state.trades = state.trades.filter(x => x.id !== id); await save(); renderAll(); } }
 
 /* =========================================
-   IMPORTACIÓN Y HERRAMIENTAS
+   IMPORTACIÓN Y OCR MEJORADO V7.2
 ========================================= */
 function compressImage(file, callback) {
   const reader = new FileReader();
@@ -822,47 +702,135 @@ function compressImage(file, callback) {
       let w = img.width, h = img.height;
       if (w > h) { if (w > MAX_W) { h *= MAX_W / w; w = MAX_W; } } else { if (h > MAX_H) { w *= MAX_H / h; h = MAX_H; } }
       canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
       callback(canvas.toDataURL('image/jpeg', 0.8));
     }; img.src = ev.target.result;
   }; reader.readAsDataURL(file);
 }
+
+// Nueva función de procesamiento visual para Modo Noche
+function preprocessForOCR(file, callback) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      // Dibujar fondo blanco (por si hay transparencias) y la imagen
+      ctx.fillStyle = "white"; ctx.fillRect(0,0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      // Aplicar filtro de contraste, escala de grises e invertir colores (modo oscuro a claro)
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        let avg = (data[i] + data[i+1] + data[i+2]) / 3;
+        // Invertir (texto claro en fondo oscuro pasa a texto oscuro en fondo claro)
+        let inv = 255 - avg; 
+        // Alto contraste (Binarización)
+        let finalVal = inv > 120 ? 255 : 0; 
+        data[i] = finalVal; data[i+1] = finalVal; data[i+2] = finalVal;
+      }
+      ctx.putImageData(imgData, 0, 0);
+      callback(canvas.toDataURL('image/jpeg', 1.0));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function previewImg(e) { const f = e.target.files[0]; if(!f) return; compressImage(f, b64 => { document.getElementById('tImgBase64').value = b64; document.getElementById('imgPreview').src = b64; document.getElementById('imgPreviewContainer').classList.remove('hidden'); document.getElementById('imgStatus').textContent='Captura adjuntada'; }); }
 
+// Parser Difuso (Fuzzy Parsing) súper tolerante
 function parseOCRText(rawText, imgB64 = '') {
-  const lines = rawText.split('\n'); let added = 0; let currentSym = 'XAUUSD', currentSide = 'LONG', currentLot = 0.02;
+  const lines = rawText.split('\n'); let added = 0; 
+  let lastSym = 'XAUUSD', lastDateStr = new Date().toISOString().slice(0,16);
+
   lines.forEach((line, idx) => {
-    const clean = line.trim(); if(!clean) return;
+    const clean = line.trim().replace(/\s+/g, ' '); if(!clean || clean.length < 5) return;
     const lower = clean.toLowerCase();
-    const tradePattern = /(xauusd|btcusd|[a-z]{6})\s+(buy|sell|compra|venta)\s+([\d.]+)/i;
-    const match = clean.match(tradePattern);
-    if(match) { currentSym = match[1].toUpperCase(); currentSide = match[2].toLowerCase().startsWith('b') || match[2].toLowerCase().startsWith('c') ? 'LONG' : 'SHORT'; currentLot = parseFloat(match[3]) || 0.02; } 
-    else if(lower.includes('buy') || lower.includes('sell') || lower.includes('compra') || lower.includes('venta')) {
-      const parts = clean.split(','); if(parts[0]) currentSym = parts[0].trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
-      if(!currentSym || currentSym.length < 3) currentSym = 'XAUUSD';
-      currentSide = (lower.includes('buy') || lower.includes('compra')) ? 'LONG' : 'SHORT';
-      const lotMatch = clean.match(/([\d.]+\d)/); if(lotMatch) currentLot = parseFloat(lotMatch[1]) || 0.02;
+    
+    // Si no detecta compras o ventas, ignorar línea
+    if(!lower.includes('buy') && !lower.includes('sell') && !lower.includes('compra') && !lower.includes('venta')) return;
+
+    let currentSym = lastSym;
+    let currentSide = (lower.includes('buy') || lower.includes('compra')) ? 'LONG' : 'SHORT';
+    
+    // Cazar Símbolo ignorando basura (Ej: XAUUSD, BTCUSD, US30)
+    const symMatch = clean.match(/(XAU[A-Z0-9]*|BTC[A-Z0-9]*|US30|NAS100|[A-Z]{6})/i);
+    if(symMatch) { currentSym = symMatch[1].toUpperCase().replace('0', 'O'); lastSym = currentSym; }
+
+    // Cazar fecha (Ej: 2026.11.02 10:30) tolerante a errores de puntos
+    const dateMatch = clean.match(/(\d{2,4})[./\-,_](\d{2})[./\-,_](\d{2})\s+(\d{2})[:;.](\d{2})/);
+    let dateStr = lastDateStr;
+    if(dateMatch) { 
+      let y = dateMatch[1].length===2 ? '20'+dateMatch[1] : dateMatch[1];
+      dateStr = `${y}-${dateMatch[2]}-${dateMatch[3]}T${dateMatch[4]}:${dateMatch[5]}`;
+      lastDateStr = dateStr;
     }
-    if(clean.includes('→') || clean.includes('-') || clean.includes('+') || /\d+[.,]\d+/.test(clean)) {
-      const arrowParts = clean.split('→'); let entry = 0, exit = 0;
-      if(arrowParts.length >= 2) { entry = parseFloat(arrowParts[0].replace(/\s+/g, '').replace(',', '.')) || 0; exit = parseFloat(arrowParts[1].replace(/[^\d.]/g, '')) || 0; }
-      const dateMatch = clean.match(/(\d{4})[./-](\d{2})[./-](\d{2})\s+(\d{2}:\d{2}:\d{2})/);
-      let dateStr = new Date().toISOString().slice(0,16); if(dateMatch) { dateStr = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}T${dateMatch[4].slice(0,5)}`; }
-      let h = parseInt(dateStr.slice(11,13)); let ses = 'Asia'; if(h >= 8 && h < 14) ses = 'Londres'; else if(h >= 14 && h < 22) ses = 'Nueva York';
-      const nums = clean.match(/[-+]?\d+([.,]\d+)?/g); let pnl = 0; if(nums && nums.length > 0) pnl = parseFloat(nums[nums.length - 1].replace(',', '.')) || 0;
-      state.trades.push({ id: 'imp_' + Date.now() + '_' + idx, acc: curAcc().id, date: dateStr, sym: currentSym, side: currentSide, size: currentLot, entry: entry, sl: null, exits: [{price: exit, lot: currentLot}], gross: pnl, fee: 0, risk: 50, ses: ses, setup: 'Import', err: '', mae: 0, mfe: 0, notes: '', img: imgB64 });
-      added++;
+    
+    // Extraer TODOS los números flotantes de la línea
+    // Modificado para capturar números con punto o coma, ignorando letras
+    const numRegex = /[-+]?\d+[.,]\d+/g;
+    const numsMatch = clean.match(numRegex);
+    
+    let currentLot = 0.02, entry = 0, exit = 0, pnl = 0;
+
+    if(numsMatch && numsMatch.length >= 3) {
+      // Limpiar formatos (convertir comas a puntos)
+      const floats = numsMatch.map(n => parseFloat(n.replace(',', '.')));
+      
+      // Heurística de asignación:
+      // - El Lote suele ser el número más pequeño positivo (0.01, 0.05, 1.00)
+      // - El Precio de Entrada y Salida suelen ser grandes (1.0950, 2700.50, 70000.50)
+      // - El PnL suele estar al final de la línea.
+      
+      pnl = floats[floats.length - 1]; // Último número suele ser el PnL neto
+      
+      // Buscar Lote (el más cercano a 0 que sea > 0 y menor a 100)
+      let tempLots = floats.filter(f => f > 0 && f < 50);
+      if(tempLots.length > 0) currentLot = tempLots[0];
+      
+      // Buscar Precios (mayores a 50) - Muy específico para Índices, Oro, Crypto. Para Forex puro (1.0500) puede fallar esta regla.
+      // Así que simplemente cogemos los números del medio
+      if(floats.length >= 4) {
+         entry = floats[1]; 
+         exit = floats[2]; 
+      }
     }
+
+    let h = parseInt(dateStr.slice(11,13)); let ses = 'Asia'; if(h >= 8 && h < 14) ses = 'Londres'; else if(h >= 14 && h < 22) ses = 'Nueva York';
+    
+    state.trades.push({ 
+      id: 'ocr_' + Date.now() + '_' + idx, acc: curAcc().id, date: dateStr, sym: currentSym, side: currentSide, 
+      size: currentLot, entry: entry, sl: null, exits: [{price: exit, lot: currentLot}], gross: pnl, 
+      fee: 0, risk: 50, ses: ses, setup: 'OCR Auto', err: '', mae: 0, mfe: 0, notes: 'Auto-detectado', img: imgB64 
+    });
+    added++;
   }); return added;
 }
 
 function importScreenshotOCR(e) {
-  const file = e.target.files[0]; if(!file) return; const statusEl = document.getElementById('ocrStatus');
-  statusEl.textContent = '⏳ Escaneando...'; statusEl.className = 'text-amber-400 font-semibold';
-  compressImage(file, b64 => {
-    Tesseract.recognize(b64, 'eng+spa', { logger: m => { if(m.status==='recognizing text') statusEl.textContent = `⏳ OCR: ${Math.round(m.progress * 100)}%`; } })
-    .then(async ({ data: { text } }) => { const added = parseOCRText(text, b64); await save(); renderAll(); document.getElementById('importImgInput').value = ''; statusEl.textContent = '✅ Completado'; statusEl.className = 'text-emerald-400 font-semibold'; alert(`OCR: ${added} operaciones extraídas.`); })
-    .catch(err => { statusEl.textContent = '❌ Error'; statusEl.className = 'text-rose-400 font-semibold'; alert('Error: ' + err.message); });
+  const file = e.target.files[0]; if(!file) return; 
+  const statusEl = document.getElementById('ocrStatus');
+  statusEl.textContent = '⏳ Preprocesando imagen (Modo Noche)...'; statusEl.className = 'text-amber-400 font-semibold';
+  
+  // Guardamos la imagen normal para el modal, pero le pasamos la "Binarizada" a Tesseract
+  compressImage(file, b64Normal => {
+    preprocessForOCR(file, b64Binarizada => {
+      statusEl.textContent = '⏳ Analizando (Tesseract IA)...';
+      Tesseract.recognize(b64Binarizada, 'eng', { logger: m => { if(m.status==='recognizing text') statusEl.textContent = `⏳ IA Leyendo: ${Math.round(m.progress * 100)}%`; } })
+      .then(async ({ data: { text } }) => { 
+        const added = parseOCRText(text, b64Normal); // Guardar la original en la App
+        await save(); renderAll(); 
+        document.getElementById('importImgInput').value = ''; 
+        statusEl.textContent = '✅ Completado'; statusEl.className = 'text-emerald-400 font-semibold'; 
+        alert(`OCR Finalizado: ${added} operaciones detectadas.`); 
+      })
+      .catch(err => { statusEl.textContent = '❌ Error'; statusEl.className = 'text-rose-400 font-semibold'; alert('Error: ' + err.message); });
+    });
   });
 }
 
@@ -892,77 +860,35 @@ function importFile(e) {
   }
 }
 
-// GESTIÓN DE CUENTAS (ACTUALIZADA V7.1)
-function openAccModal() {
-  document.getElementById('modalAccSelect').innerHTML = state.accounts.map(a => `<option value="${a.id}" ${a.id===state.activeAcc?'selected':''}>${a.name} (${a.cur}${a.bal})</option>`).join('');
-  loadAccToModalForm(); document.getElementById('accModal').classList.remove('hidden');
-}
-
-function toggleAccFields() {
-  const type = document.getElementById('aType').value;
-  document.getElementById('propRulesFields').classList.toggle('hidden', type === 'Live');
-}
-
+// GESTIÓN DE CUENTAS
+function openAccModal() { document.getElementById('modalAccSelect').innerHTML = state.accounts.map(a => `<option value="${a.id}" ${a.id===state.activeAcc?'selected':''}>${a.name} (${a.cur}${a.bal})</option>`).join(''); loadAccToModalForm(); document.getElementById('accModal').classList.remove('hidden'); }
+function toggleAccFields() { document.getElementById('propRulesFields').classList.toggle('hidden', document.getElementById('aType').value === 'Live'); }
 function loadAccToModalForm() {
   const a = state.accounts.find(x => x.id === document.getElementById('modalAccSelect').value); if(!a) return;
-  document.getElementById('editAccId').value = a.id; 
-  document.getElementById('aName').value = a.name;
-  document.getElementById('aType').value = a.type || 'Fondeo';
-  document.getElementById('aBal').value = a.bal; 
-  document.getElementById('aCur').value = a.cur;
-  document.getElementById('aTarget').value = a.target || ''; 
-  document.getElementById('aDaily').value = a.daily || '';
-  document.getElementById('aMaxDD').value = a.maxdd || '';
-  toggleAccFields();
+  document.getElementById('editAccId').value = a.id; document.getElementById('aName').value = a.name; document.getElementById('aType').value = a.type || 'Fondeo'; document.getElementById('aBal').value = a.bal; document.getElementById('aCur').value = a.cur;
+  document.getElementById('aTarget').value = a.target || ''; document.getElementById('aDaily').value = a.daily || ''; document.getElementById('aMaxDD').value = a.maxdd || ''; toggleAccFields();
 }
-
 async function updateAccFromModal() {
   const a = state.accounts.find(x => x.id === document.getElementById('editAccId').value); if(!a) return;
-  a.name = document.getElementById('aName').value||'Cuenta'; 
-  a.type = document.getElementById('aType').value;
-  a.bal = +document.getElementById('aBal').value||10000;
-  a.cur = document.getElementById('aCur').value; 
-  a.target = +document.getElementById('aTarget').value||1000;
-  a.daily = +document.getElementById('aDaily').value||500; 
-  a.maxdd = +document.getElementById('aMaxDD').value||1000;
+  a.name = document.getElementById('aName').value||'Cuenta'; a.type = document.getElementById('aType').value; a.bal = +document.getElementById('aBal').value||10000; a.cur = document.getElementById('aCur').value; a.target = +document.getElementById('aTarget').value||1000; a.daily = +document.getElementById('aDaily').value||500; a.maxdd = +document.getElementById('aMaxDD').value||1000;
   await save(); closeModal('accModal'); renderAll(); alert('Cuenta actualizada');
 }
-
 async function createNewAccFromModal() {
-  const id = 'acc_'+Date.now();
-  state.accounts.push({
-    id, 
-    name: document.getElementById('aName').value||'Nueva', 
-    type: document.getElementById('aType').value,
-    bal: +document.getElementById('aBal').value||10000,
-    cur: document.getElementById('aCur').value, 
-    target: +document.getElementById('aTarget').value||1000,
-    daily: +document.getElementById('aDaily').value||500, 
-    maxdd: +document.getElementById('aMaxDD').value||1000
-  });
+  const id = 'acc_'+Date.now(); state.accounts.push({ id, name: document.getElementById('aName').value||'Nueva', type: document.getElementById('aType').value, bal: +document.getElementById('aBal').value||10000, cur: document.getElementById('aCur').value, target: +document.getElementById('aTarget').value||1000, daily: +document.getElementById('aDaily').value||500, maxdd: +document.getElementById('aMaxDD').value||1000 });
   state.activeAcc = id; await save(); closeModal('accModal'); renderAll(); alert('Cuenta creada');
 }
-
 async function deleteCurrentAccountModal() {
   if(state.accounts.length <= 1) { alert('No puedes eliminar la única cuenta.'); return; }
   const accId = document.getElementById('modalAccSelect').value;
-  if(confirm(`¿Eliminar esta cuenta y sus operaciones?`)) {
-    state.accounts = state.accounts.filter(x => x.id !== accId);
-    state.trades = state.trades.filter(x => x.acc !== accId);
-    state.activeAcc = state.accounts[0].id;
-    await save(); closeModal('accModal'); renderAll(); alert('Cuenta eliminada');
-  }
+  if(confirm(`¿Eliminar esta cuenta y sus operaciones?`)) { state.accounts = state.accounts.filter(x => x.id !== accId); state.trades = state.trades.filter(x => x.acc !== accId); state.activeAcc = state.accounts[0].id; await save(); closeModal('accModal'); renderAll(); alert('Cuenta eliminada'); }
 }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
 function exportData() {
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
-  const a = document.createElement('a');
-  a.href = dataStr; a.download = 'pnl_ledger_v7_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  const a = document.createElement('a'); a.href = dataStr; a.download = 'pnl_ledger_v7_backup_' + new Date().toISOString().slice(0,10) + '.json';
   document.body.appendChild(a); a.click(); a.remove();
 }
 
-// Inicialización asíncrona
 bootstrap();
 </script>
 </body>
